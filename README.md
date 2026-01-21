@@ -7,6 +7,9 @@ https://adoptium.net/download?link=https%3A%2F%2Fgithub.com%2Fadoptium%2Ftemurin
 Download Maven
 https://dlcdn.apache.org/maven/maven-3/3.9.12/binaries/apache-maven-3.9.12-bin.zip
 
+Download Scene Builder
+https://gluonhq.com/products/scene-builder/thanks/?dl=https://download2.gluonhq.com/scenebuilder/25.0.0/install/win/SceneBuilder-25.0.0.msi
+
 Extract the maven zip to C:\Program Files\Apache\
 create Apache Folder if there isnt one
 
