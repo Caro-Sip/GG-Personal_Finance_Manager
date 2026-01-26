@@ -9,4 +9,9 @@ public class PrimaryController {
     private void switchToSecondary() throws IOException {
         App.setRoot("secondary");
     }
+
+    @FXML
+    private void exitProgram() throws IOException {
+        System.exit(0);
+    }
 }

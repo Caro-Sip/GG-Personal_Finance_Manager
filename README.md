@@ -25,3 +25,16 @@ This command will clean the project and package it into a JAR file located in th
 The `clean` command in Maven is used to remove the `target` directory, which contains all the compiled files and build artifacts from previous builds. This ensures that the next build starts from a fresh state without any leftover files that could potentially cause issues.
 
 When you run a Maven command with `clean`, it first deletes the `target` directory before executing the specified goal (like `package` or `javafx:run`). This is useful when you want to ensure that your build is not affected by any previous builds.
+
+
+### How javafx communicates with fxml
+For reference: fxml is similar to an html file
+
+```
+<Button fx:id="primaryButton" onAction="#switchToSecondary" text="Switch to Secondary View" />
+<Button fx:id="primaryButton1" onAction="#exitProgram" text="Exit" />
+```
+
+the second button: `Exit` click will call the method `exitProgram` in the controller class `PrimaryController.java`
+
+the `fx:id` is used to identify the button in the controller class if needed.
