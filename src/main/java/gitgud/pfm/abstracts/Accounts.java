@@ -1,4 +1,4 @@
-package gitgud.pfm.Models;
+package gitgud.pfm.abstracts;
 
 abstract class Accounts {
     private int id;
