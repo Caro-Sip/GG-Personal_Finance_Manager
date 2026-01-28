@@ -13,7 +13,7 @@ public class AccountDataLoader {
         private List<Budget> budgets;
         private List<Goal> goals;
         private List<Transaction> transactions;
-        private gitgud.pfm.Models.Wallet wallet;
+        private gitgud.pfm.Models.Account account;
 
         public List<Budget> getBudgets() {
             return budgets;
@@ -39,12 +39,12 @@ public class AccountDataLoader {
             this.transactions = transactions;
         }
 
-        public gitgud.pfm.Models.Wallet getWallet() {
-            return wallet;
+        public gitgud.pfm.Models.Account getAccount() {
+            return account;
         }
 
-        public void setWallet(gitgud.pfm.Models.Wallet wallet) {
-            this.wallet = wallet;
+        public void setAccount(gitgud.pfm.Models.Account account) {
+            this.account = account;
         }
 
     }
@@ -57,7 +57,12 @@ public class AccountDataLoader {
         config.put("class", Budget.class);
         config.put("table", "Budget");
         config.put("orderBy", "start_date DESC");
-        data.budgets = GenericSQLiteService.readAll(config);
+        try {
+            data.budgets = GenericSQLiteService.readAll(config);
+        } catch (Exception e) {
+            System.err.println("Warning: failed to read budgets: " + e.getMessage());
+            data.budgets = new java.util.ArrayList<>();
+        }
 
         // Transactions: read all transactions where AccountID = keyString
         config.clear();
@@ -69,21 +74,31 @@ public class AccountDataLoader {
         config.put("orderBy", "Create_time DESC");
         data.transactions = GenericSQLiteService.readAll(config);
 
-        // Wallet: read Wallet by primary key 'AccountID'
+        // Account: read Account by primary key 'AccountID'
         config.clear();
-        config.put("class", Wallet.class);
-        config.put("table", "Wallets");
+        config.put("class", Account.class);
+        config.put("table", "Accounts");
         config.put("pk", "AccountID");
         config.put("id", accountID);
-        Wallet wallet = GenericSQLiteService.read(config);
-        data.setWallet(wallet);
+        try {
+            gitgud.pfm.Models.Account Account = GenericSQLiteService.read(config);
+            data.setAccount(Account);
+        } catch (Exception e) {
+            System.err.println("Warning: failed to read Account with AccountID = " + accountID + ": " + e.getMessage());
+            data.setAccount(null);
+        }
 
         // Goals: read all goals (public data)
         config.clear();
         config.put("class", Goal.class);
         config.put("table", "Goal");
         config.put("orderBy", "createAt DESC");
-        data.goals = GenericSQLiteService.readAll(config);
+        try {
+            data.goals = GenericSQLiteService.readAll(config);
+        } catch (Exception e) {
+            System.err.println("Warning: failed to read goals: " + e.getMessage());
+            data.goals = new java.util.ArrayList<>();
+        }
 
         return data;
     }
