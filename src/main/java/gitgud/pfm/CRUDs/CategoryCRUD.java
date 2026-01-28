@@ -1,7 +1,6 @@
 package gitgud.pfm.CRUDs;
 
 import gitgud.pfm.Models.Category;
-import gitgud.pfm.interfaces.CRUDService;
 
 public class CategoryCRUD implements CRUDService<Category> {
 
