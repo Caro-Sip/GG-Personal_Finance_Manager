@@ -8,6 +8,8 @@ import java.util.concurrent.TimeUnit;
 import gitgud.pfm.Models.Transaction;
 import gitgud.pfm.Models.Budget;
 import gitgud.pfm.services.GenericSQLiteService;
+import gitgud.pfm.services.CategoryService;
+import gitgud.pfm.Models.Category;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -19,6 +21,7 @@ import java.time.LocalDateTime;
 public class CliController {
     private Scanner scanner;
     private boolean running = true;
+    private final CategoryService categoryService = new CategoryService();
     
     public CliController() {
         this.scanner = new Scanner(System.in);
@@ -99,17 +102,56 @@ public class CliController {
         System.out.print("Enter transaction name: ");
         String name = scanner.nextLine().trim();
         
-        // Get category
-        System.out.print("Enter category: ");
-        String category = scanner.nextLine().trim();
+
+        // Display predefined categories and prompt for selection
+        var defaultCategories = categoryService.getDefaultCategories();
+        System.out.println("Select a category:");
+        int idx = 1;
+        System.out.println("Expense Categories:");
+        for (Category cat : defaultCategories) {
+            if (cat.getType() == Category.Type.EXPENSE) {
+                System.out.printf("  %d. %s\n", idx, cat.getName());
+            }
+            idx++;
+        }
+        idx = 1;
+        System.out.println("Income Categories:");
+        for (Category cat : defaultCategories) {
+            if (cat.getType() == Category.Type.INCOME) {
+                System.out.printf("  %d. %s\n", idx, cat.getName());
+            }
+            idx++;
+        }
+        int selected = -1;
+        Category selectedCategory = null;
+        while (selectedCategory == null) {
+            System.out.print("Enter the number of the category: ");
+            String input = scanner.nextLine().trim();
+            try {
+                int num = Integer.parseInt(input);
+                if (num >= 1 && num <= defaultCategories.size()) {
+                    selectedCategory = defaultCategories.get(num - 1);
+                } else {
+                    System.out.println("Invalid number. Try again.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a valid number.");
+            }
+        }
+        String category = selectedCategory.getName();
         
+
         // Get account ID
         System.out.print("Enter account ID: ");
         String accountID = scanner.nextLine().trim();
-        
-        // Get income amount (0 if expense)
-        System.out.print("Enter income amount (0 if expense): ");
-        double income = Double.parseDouble(scanner.nextLine().trim());
+
+        double income = 0.0;
+        if (selectedCategory.getType() == Category.Type.INCOME) {
+            System.out.print("Enter income amount: ");
+            income = Double.parseDouble(scanner.nextLine().trim());
+        } else {
+            System.out.println("Income amount set to 0 for expense category.");
+        }
 
         // Get current timestamp
         String timestamp = java.time.LocalDateTime.now().toString();
