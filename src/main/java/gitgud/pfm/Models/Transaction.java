@@ -11,7 +11,6 @@ public class Transaction extends FinancialEntity{
     public Transaction() {
         super(null, null, 0.0);
     }
-    private String id; // Primary Key
     private String categoryId;
     private double amount;
     private String name;
@@ -19,7 +18,7 @@ public class Transaction extends FinancialEntity{
     private String accountId;
     private String createTime;
     
-    public Transaction(String categoryId, double amount, String name, 
+    public Transaction(String categoryId, String category, double amount, String name, 
                       double income, String accountId, String createTime) {
         super(IdGenerator.generateTransactionId(),
               name,

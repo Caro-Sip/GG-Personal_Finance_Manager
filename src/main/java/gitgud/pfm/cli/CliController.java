@@ -12,6 +12,7 @@ import gitgud.pfm.Models.Category;
 import gitgud.pfm.services.*;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 
 /**
  * CLI Controller - Manages the command-line interface and user interactions
@@ -65,24 +66,26 @@ public class CliController {
                     handleViewAllTransactions();
                     break;
                 case "3":
-                    handleAddTransaction();
+                    handleAddTransaction(defaultAccountID);
                     break;
                 case "4":
                     handleViewAllBudgets();
                     break;
                 case "5":
-                    handleAddBudget();
+                    handleAddBudget(defaultAccountID);
                     break;
                 case "6":
                     handleViewAllGoals();
                     break;
                 case "7":
-                    handleAddGoal();
+                    handleAddGoal(defaultAccountID);
                     break;
                 case "8":
                     handleViewReports();
                     break;
                 case "0":
+                    // looks for users input then call exit program
+                    // then changes running to false to exit loop
                     handleExit();
                     break;
                 default:
@@ -237,7 +240,7 @@ public class CliController {
     /**
      * Handle Add Transaction menu option
      */
-    private void handleAddTransaction() {
+    private void handleAddTransaction(String accountId) {
         System.out.println("=== Add Transaction ===");
 
         // ID is auto-generated
@@ -326,13 +329,14 @@ public class CliController {
 
         // Only generate timestamp if all inputs are valid
         String timestamp = java.time.LocalDateTime.now().toString();
-        Transaction transaction = new Transaction(category, amount, name, income, accountID, timestamp);
+        String categoryId = selectedCategory.getId();
+        Transaction transaction = new Transaction(categoryId, category, amount, name, income, accountID, timestamp);
         
         // Save to database using TransactionService
         transactionService.create(transaction);
         System.out.println("Transaction created: " + transaction.getName());
     }
-
+    
     /**
      * Handle View Reports menu option
      */
@@ -357,12 +361,22 @@ public class CliController {
     private void printMainMenu() {
         System.out.println("Main Menu:");
         System.out.println("1. View Account Summary");
+        System.out.println("========================================");
         System.out.println("2. View All Transactions");
         System.out.println("3. Add Transaction");
+        System.out.println("#. Edit Transaction (Not Implemented)");
+        System.out.println("#. Delete Transaction (Not Implemented)");
+        System.out.println("========================================");
         System.out.println("4. View All Budgets");
         System.out.println("5. Add Budget");
+        System.out.println("#. Edit Budget (Not Implemented)");
+        System.out.println("#. Delete Budget (Not Implemented)");
+        System.out.println("========================================");
         System.out.println("6. View All Goals");
         System.out.println("7. Add Goal");
+        System.out.println("#. Edit Goal (Not Implemented)");
+        System.out.println("#. Delete Goal (Not Implemented)");
+        System.out.println("========================================");
         System.out.println("8. View Reports");
         System.out.println("0. Exit");
     }
@@ -370,7 +384,7 @@ public class CliController {
     /**
      * Handle Add Budget menu option
      */
-    private void handleAddBudget() {
+    private void handleAddBudget(String accountID) {
         System.out.println("=== Add Budget ===");
 
         // ID is auto-generated
@@ -381,11 +395,15 @@ public class CliController {
         System.out.print("Enter limit amount: ");
         double limits = Double.parseDouble(scanner.nextLine().trim());
 
-        System.out.print("Enter starting balance: ");
-        double balance = Double.parseDouble(scanner.nextLine().trim());
+        // Balance represents current spent amount
+        double balance = 0.0;
 
-        System.out.print("Enter start date (YYYY-MM-DD): ");
+        // TODO choose whether to set start date to now or custom
+        System.out.print("Enter start date (YYYY-MM-DD leave blank for now): ");
         String startDate = scanner.nextLine().trim();
+        if (startDate.isEmpty()) {
+            startDate = LocalDateTime.now().toString();
+        }
 
         System.out.print("Enter end date (YYYY-MM-DD): ");
         String endDate = scanner.nextLine().trim();
@@ -403,7 +421,7 @@ public class CliController {
     /**
      * Handle Add Goal menu option
      */
-    private void handleAddGoal() {
+    private void handleAddGoal(String accountID) {
         System.out.println("=== Add Goal ===");
 
         // ID is auto-generated
@@ -424,8 +442,10 @@ public class CliController {
         double priority = Double.parseDouble(scanner.nextLine().trim());
 
         System.out.print("Enter creation time (YYYY-MM-DD or leave blank for now): ");
-        String createAtInput = scanner.nextLine().trim();
-        String createAt = createAtInput.isEmpty() ? java.time.LocalDateTime.now().toString() : createAtInput;
+        String createAt = scanner.nextLine().trim();
+        if (createAt.isEmpty()) {
+            createAt = LocalDateTime.now().toString();
+        }
 
         Goal goal = new Goal(name, target, current, deadline, priority, createAt);
         
