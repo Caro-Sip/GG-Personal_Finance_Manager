@@ -1,5 +1,10 @@
 package gitgud.pfm.Models;
 
+import gitgud.pfm.services.GenericSQLiteService;
+
+import java.util.HashMap;
+import java.util.Map;
+
 public class Budget {
     private String id;
     private String name;
@@ -9,8 +14,8 @@ public class Budget {
     private String end_date;
     private String trackedCategories;
     
-    public Budget(String id, String name, double limits, double balance, 
-                  String start_date, String end_date, String trackedCategories) {
+    public Budget(String id, String name, double limits, double balance, String start_date, String end_date,
+            String trackedCategories) {
         this.id = id;
         this.name = name;
         this.limits = limits;
@@ -18,6 +23,12 @@ public class Budget {
         this.start_date = start_date;
         this.end_date = end_date;
         this.trackedCategories = trackedCategories;
+
+        Map<String, Object> config = new HashMap<>();
+        config.put("class", Budget.class);
+        config.put("table", "Budget");
+        config.put("entity", this);
+        GenericSQLiteService.create(config);
     }
     
     public String getId() { return id; }

@@ -3,6 +3,7 @@ package gitgud.pfm.services;
 import gitgud.pfm.interfaces.CRUDService;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.sql.*;
 import java.util.*;
 
@@ -403,6 +404,7 @@ public class GenericSQLiteService<T> implements CRUDService<T> {
         List<Field> fieldsToInsert = new ArrayList<>();
 
         for (Field currentField : entityFields) {
+            if (Modifier.isStatic(currentField.getModifiers())) continue;
             currentField.setAccessible(true);
             try {
                 Object fieldValue = currentField.get(entity);
@@ -519,6 +521,7 @@ public class GenericSQLiteService<T> implements CRUDService<T> {
         Object primaryKeyValue = null;
 
         for (Field currentField : entityFields) {
+            if (Modifier.isStatic(currentField.getModifiers())) continue;
             currentField.setAccessible(true);
 
             try {

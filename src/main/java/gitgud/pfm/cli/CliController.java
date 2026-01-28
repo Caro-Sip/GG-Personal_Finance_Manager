@@ -6,6 +6,7 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 import gitgud.pfm.Models.Transaction;
+import gitgud.pfm.Models.Budget;
 import gitgud.pfm.services.GenericSQLiteService;
 
 import java.io.IOException;
@@ -48,6 +49,9 @@ public class CliController {
                     break;
                 case "2":
                     handleAddTransaction();
+                    break;
+                case "5":
+                    handleAddBudget();
                     break;
                 case "3":
                     handleViewReports();
@@ -149,6 +153,39 @@ public class CliController {
         System.out.println("2. Add Transaction");
         System.out.println("3. View Reports");
         System.out.println("4. Exit");
+        System.out.println("5. Add Budget");
+    }
+
+    /**
+     * Handle Add Budget menu option
+     */
+    private void handleAddBudget() {
+        System.out.println("=== Add Budget ===");
+
+        System.out.print("Enter budget ID: ");
+        String id = scanner.nextLine().trim();
+
+        System.out.print("Enter budget name: ");
+        String name = scanner.nextLine().trim();
+
+        System.out.print("Enter limit amount: ");
+        double limits = Double.parseDouble(scanner.nextLine().trim());
+
+        System.out.print("Enter starting balance: ");
+        double balance = Double.parseDouble(scanner.nextLine().trim());
+
+        System.out.print("Enter start date (YYYY-MM-DD): ");
+        String startDate = scanner.nextLine().trim();
+
+        System.out.print("Enter end date (YYYY-MM-DD): ");
+        String endDate = scanner.nextLine().trim();
+
+        System.out.print("Enter tracked categories (comma-separated): ");
+        String tracked = scanner.nextLine().trim();
+
+        Budget budget = new Budget(id, name, limits, balance, startDate, endDate, tracked);
+
+        System.out.println("Budget created: " + budget.getName());
     }
 
     private void exitProgram() {
