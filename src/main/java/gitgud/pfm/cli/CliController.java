@@ -1,6 +1,9 @@
 package gitgud.pfm.cli;
 
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
@@ -66,22 +69,22 @@ public class CliController {
                     handleViewAllTransactions();
                     break;
                 case "3":
-                    handleAddTransaction(defaultAccountID);
+                    handleAddTransaction(accountData.getAccount().getId());
                     break;
                 case "4":
                     handleViewAllBudgets();
                     break;
                 case "5":
-                    handleAddBudget(defaultAccountID);
+                    handleAddBudget(accountData.getAccount().getId());
                     break;
                 case "6":
                     handleViewAllGoals();
                     break;
                 case "7":
-                    handleAddGoal(defaultAccountID);
+                    handleAddGoal(accountData.getAccount().getId());
                     break;
                 case "8":
-                    handleViewReports();
+                    handleViewReports(accountData);
                     break;
                 case "0":
                     // looks for users input then call exit program
@@ -340,9 +343,25 @@ public class CliController {
     /**
      * Handle View Reports menu option
      */
-    private void handleViewReports() {
-        System.out.println("View Reports feature is not implemented yet.");
-        // TODO: Call ReportService to display reports
+    private void handleViewReports(AccountDataLoader.DataHolder accountData) {
+        System.out.println("=== View Transaction Reports ===");
+        for (Transaction t : accountData.getTransactions()) {
+            System.out.println(t);
+        }
+    }
+
+    /**
+     * Handle View Budgets menu option
+     */
+    private void handleViewBudgets(AccountDataLoader.DataHolder accountData) {
+        System.out.println("=== View Budgets ===");
+    }
+
+    /**
+     * Handle View Goals menu option
+     */
+    private void handleViewGoals(AccountDataLoader.DataHolder accountData) {
+        System.out.println("=== View Goals ===");
     }
 
     /**
