@@ -7,12 +7,124 @@ import java.sql.*;
 import java.util.*;
 
 /**
- * Generic CRUD implementation using JDBC and reflection.
- * - Works with any table name (including schema-qualified names)
- * - Supports create, read (by pk), readAll with optional columns/filters,
- * update by object or by Map, and delete by pk.
- * - Assumes a no-arg constructor for entity type and fields matching column
- * names.
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * Generic CRUD - Map-Based API
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * All operations use a Map<String, Object> for configuration.
+ * 
+ * REQUIRED Map Keys:
+ * - "table" : String - Table name (e.g., "products", "orders")
+ * - "class" : Class<?> - Entity class (e.g., Product.class)
+ * 
+ * OPTIONAL Map Keys (depending on operation):
+ * - "pk" : String - Primary key column name (default: "id")
+ * - "entity" : Object - Entity object to insert/update
+ * - "id" : Object - Primary key value for read/update/delete
+ * - "updates" : Map<String, Object> - Column->value pairs for update
+ * - "filters" : Map<String, Object> - WHERE clause filters (AND logic)
+ * - "columns" : List<String> - Columns to select (default: all "*")
+ * - "orderBy" : String - ORDER BY clause (e.g., "price DESC")
+ * - "limit" : Integer - LIMIT clause (max rows to return)
+ * 
+ * ─────────────────────────────────────────────────────────────────────────
+ * AUTO-SAVE TO DATABASE (Uncomment to enable)
+ * ─────────────────────────────────────────────────────────────────────────
+ * Map<String, Object> config = new HashMap<>();
+ * config.put("class", replacewithclassname.class);
+ * config.put("table", "replacewithtablename");
+ * config.put("entity", this);
+ * GenericSQLiteCRUD.create(config);
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * USAGE EXAMPLES (CRUD Order)
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * ───────────────────────────────────────────────────────────────────────────────
+ * CREATE - Insert new record
+ * ───────────────────────────────────────────────────────────────────────────────
+ * 
+ * Transaction t = new Transaction("txn_123", 100.50, "2026-01-28");
+ * Map<String, Object> config = new HashMap<>();
+ * config.put("class", Transaction.class);
+ * config.put("table", "transactions");
+ * config.put("entity", t);
+ * GenericSQLiteCRUD.create(config);
+ * 
+ * ★ AUTO-SAVE IN CONSTRUCTOR:
+ * public Transaction(String id, double amount, String date) {
+ * this.id = id;
+ * this.amount = amount;
+ * this.date = date;
+ * 
+ * Map<String, Object> config = new HashMap<>();
+ * config.put("class", Transaction.class);
+ * config.put("table", "transactions");
+ * config.put("entity", this);
+ * GenericSQLiteCRUD.create(config);
+ * }
+ * 
+ * ───────────────────────────────────────────────────────────────────────────────
+ * READ - Get single record by ID
+ * ───────────────────────────────────────────────────────────────────────────────
+ * 
+ * Map<String, Object> config = new HashMap<>();
+ * config.put("class", Transaction.class);
+ * config.put("table", "transactions");
+ * config.put("id", "txn_123");
+ * Transaction t = GenericSQLiteCRUD.read(config);
+ * 
+ * ───────────────────────────────────────────────────────────────────────────────
+ * READ - Get multiple records (filtered, ordered, limited)
+ * ───────────────────────────────────────────────────────────────────────────────
+ * 
+ * Map<String, Object> filters = new HashMap<>();
+ * filters.put("category", "Food");
+ * 
+ * Map<String, Object> config = new HashMap<>();
+ * config.put("class", Transaction.class);
+ * config.put("table", "transactions");
+ * config.put("filters", filters);
+ * config.put("orderBy", "date DESC");
+ * config.put("limit", 50);
+ * List<Transaction> transactions = GenericSQLiteCRUD.readAll(config);
+ * 
+ * ───────────────────────────────────────────────────────────────────────────────
+ * READ - Get data as Maps (for GUI tables - no class needed)
+ * ───────────────────────────────────────────────────────────────────────────────
+ * 
+ * Map<String, Object> config = new HashMap<>();
+ * config.put("table", "transactions");
+ * config.put("orderBy", "date DESC");
+ * List<Map<String, Object>> rows = GenericSQLiteCRUD.readAllAsMap(config);
+ * // rows = [{"id": "txn_123", "amount": 100.50, "date": "2026-01-28"}, ...]
+ * 
+ * ───────────────────────────────────────────────────────────────────────────────
+ * UPDATE - Update specific columns
+ * ───────────────────────────────────────────────────────────────────────────────
+ * 
+ * Map<String, Object> updates = new HashMap<>();
+ * updates.put("amount", 150.75);
+ * updates.put("category", "Entertainment");
+ * 
+ * Map<String, Object> config = new HashMap<>();
+ * config.put("class", Transaction.class);
+ * config.put("table", "transactions");
+ * config.put("id", "txn_123");
+ * config.put("updates", updates);
+ * GenericSQLiteCRUD.update(config);
+ * 
+ * ───────────────────────────────────────────────────────────────────────────────
+ * DELETE - Remove record by ID
+ * ───────────────────────────────────────────────────────────────────────────────
+ * 
+ * Map<String, Object> config = new HashMap<>();
+ * config.put("class", Transaction.class);
+ * config.put("table", "transactions");
+ * config.put("id", "txn_123");
+ * GenericSQLiteCRUD.delete(config);
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
  */
 public class GenericSQLiteCRUD<T> implements CRUD<T> {
 
@@ -20,7 +132,6 @@ public class GenericSQLiteCRUD<T> implements CRUD<T> {
     private final String tableName;
     private final String primaryKeyColumnName;
 
-    // Singleton instances keyed by entityClassName|tableName|primaryKeyColumnName
     private static final Map<String, GenericSQLiteCRUD<?>> singletonInstances = new HashMap<>();
 
     private GenericSQLiteCRUD(Class<T> entityClass, String tableName, String primaryKeyColumnName) {
@@ -30,17 +141,6 @@ public class GenericSQLiteCRUD<T> implements CRUD<T> {
                 : primaryKeyColumnName;
     }
 
-    /**
-     * Get or create a singleton instance with default "id" as primary key
-     */
-    @SuppressWarnings("unchecked")
-    public static synchronized <T> GenericSQLiteCRUD<T> getInstance(Class<T> entityClass, String tableName) {
-        return getInstance(entityClass, tableName, "id");
-    }
-
-    /**
-     * Get or create a singleton instance with custom primary key column
-     */
     @SuppressWarnings("unchecked")
     public static synchronized <T> GenericSQLiteCRUD<T> getInstance(Class<T> entityClass, String tableName,
             String primaryKeyColumnName) {
@@ -58,11 +158,243 @@ public class GenericSQLiteCRUD<T> implements CRUD<T> {
         return Database.getInstance().getConnection();
     }
 
+    // ═════════════════════════════════════════════════════════════════════════════
+    // CREATE (INSERT)
+    // ═════════════════════════════════════════════════════════════════════════════
+
     /**
-     * Create (INSERT) a new entity record
+     * INSERT a new record into the database
      * 
-     * @param entity The entity object to insert
+     * @param config Configuration map with required keys
      */
+    @SuppressWarnings("unchecked")
+    public static <T> void create(Map<String, Object> config) {
+        validateRequired(config, "class", "table", "entity");
+
+        Class<T> entityClass = (Class<T>) config.get("class");
+        String tableName = (String) config.get("table");
+        String primaryKey = (String) config.getOrDefault("pk", "id");
+        T entity = (T) config.get("entity");
+
+        getInstance(entityClass, tableName, primaryKey).create(entity);
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // READ (SELECT)
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * SELECT a single record by primary key
+     * 
+     * @param config Configuration map
+     * @return The entity object, or null if not found
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T read(Map<String, Object> config) {
+        validateRequired(config, "class", "table", "id");
+
+        Class<T> entityClass = (Class<T>) config.get("class");
+        String tableName = (String) config.get("table");
+        String primaryKey = (String) config.getOrDefault("pk", "id");
+        String idValue = String.valueOf(config.get("id"));
+
+        return getInstance(entityClass, tableName, primaryKey).read(idValue);
+    }
+
+    /**
+     * SELECT multiple records with optional filters, ordering, and limit
+     * 
+     * @param config Configuration map
+     * @return List of matching entities
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> List<T> readAll(Map<String, Object> config) {
+        validateRequired(config, "class", "table");
+
+        Class<T> entityClass = (Class<T>) config.get("class");
+        String tableName = (String) config.get("table");
+        String primaryKey = (String) config.getOrDefault("pk", "id");
+
+        List<String> columns = (List<String>) config.get("columns");
+        Map<String, Object> filters = (Map<String, Object>) config.get("filters");
+        String orderBy = (String) config.get("orderBy");
+        Integer limit = (Integer) config.get("limit");
+
+        return getInstance(entityClass, tableName, primaryKey).readAll(columns, filters, orderBy, limit);
+    }
+
+    /**
+     * SELECT single record as Map - perfect for GUI display without needing a class
+     * 
+     * @param config Configuration map
+     * @return Map of column->value pairs, or null if not found
+     */
+    public static Map<String, Object> readAsMap(Map<String, Object> config) {
+        validateRequired(config, "table", "id");
+
+        String tableName = (String) config.get("table");
+        String primaryKey = (String) config.getOrDefault("pk", "id");
+        Object idValue = config.get("id");
+
+        String selectSQL = "SELECT * FROM " + tableName + " WHERE " + primaryKey + " = ?";
+
+        try (Connection databaseConnection = Database.getInstance().getConnection();
+                PreparedStatement preparedStatement = databaseConnection.prepareStatement(selectSQL)) {
+
+            preparedStatement.setObject(1, idValue);
+
+            try (ResultSet queryResults = preparedStatement.executeQuery()) {
+                if (queryResults.next()) {
+                    return resultSetToMap(queryResults);
+                }
+            }
+
+        } catch (Exception exception) {
+            throw new RuntimeException("Failed to read record from table: " + tableName, exception);
+        }
+
+        return null;
+    }
+
+    /**
+     * SELECT multiple records as List of Maps - perfect for GUI tables without needing a class
+     * 
+     * @param config Configuration map
+     * @return List of Maps, each representing a row
+     */
+    @SuppressWarnings("unchecked")
+    public static List<Map<String, Object>> readAllAsMap(Map<String, Object> config) {
+        validateRequired(config, "table");
+
+        String tableName = (String) config.get("table");
+        List<String> columnsToSelect = (List<String>) config.get("columns");
+        Map<String, Object> filterConditions = (Map<String, Object>) config.get("filters");
+        String orderByClause = (String) config.get("orderBy");
+        Integer resultLimit = (Integer) config.get("limit");
+
+        String selectedColumns = (columnsToSelect == null || columnsToSelect.isEmpty()) ? "*"
+                : String.join(", ", columnsToSelect);
+        StringBuilder selectSQLBuilder = new StringBuilder("SELECT " + selectedColumns + " FROM " + tableName);
+        List<Object> queryParameters = new ArrayList<>();
+
+        if (filterConditions != null && !filterConditions.isEmpty()) {
+            selectSQLBuilder.append(" WHERE ");
+            int filterIndex = 0;
+
+            for (Map.Entry<String, Object> filterEntry : filterConditions.entrySet()) {
+                if (filterIndex++ > 0) {
+                    selectSQLBuilder.append(" AND ");
+                }
+                selectSQLBuilder.append(filterEntry.getKey()).append(" = ?");
+                queryParameters.add(filterEntry.getValue());
+            }
+        }
+
+        if (orderByClause != null && !orderByClause.isEmpty()) {
+            selectSQLBuilder.append(" ORDER BY ").append(orderByClause);
+        }
+
+        if (resultLimit != null && resultLimit > 0) {
+            selectSQLBuilder.append(" LIMIT ").append(resultLimit);
+        }
+
+        try (Connection databaseConnection = Database.getInstance().getConnection();
+                PreparedStatement preparedStatement = databaseConnection
+                        .prepareStatement(selectSQLBuilder.toString())) {
+
+            for (int parameterIndex = 0; parameterIndex < queryParameters.size(); parameterIndex++) {
+                preparedStatement.setObject(parameterIndex + 1, queryParameters.get(parameterIndex));
+            }
+
+            try (ResultSet queryResults = preparedStatement.executeQuery()) {
+                List<Map<String, Object>> resultRows = new ArrayList<>();
+
+                while (queryResults.next()) {
+                    resultRows.add(resultSetToMap(queryResults));
+                }
+
+                return resultRows;
+            }
+
+        } catch (Exception exception) {
+            throw new RuntimeException("Failed to read all records from table: " + tableName, exception);
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // UPDATE
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * UPDATE specific columns by primary key
+     * 
+     * @param config Configuration map
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> void update(Map<String, Object> config) {
+        validateRequired(config, "class", "table");
+
+        Class<T> entityClass = (Class<T>) config.get("class");
+        String tableName = (String) config.get("table");
+        String primaryKey = (String) config.getOrDefault("pk", "id");
+
+        // Two update modes: by entity or by id+updates
+        if (config.containsKey("entity")) {
+            // Update mode 1: Using entity object
+            T entity = (T) config.get("entity");
+            getInstance(entityClass, tableName, primaryKey).update(entity);
+        } else if (config.containsKey("id") && config.containsKey("updates")) {
+            // Update mode 2: Using id + updates map
+            Object idValue = config.get("id");
+            Map<String, Object> updates = (Map<String, Object>) config.get("updates");
+            getInstance(entityClass, tableName, primaryKey).update(idValue, updates);
+        } else {
+            throw new IllegalArgumentException("Update requires either 'entity' OR ('id' + 'updates')");
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // DELETE
+    // ═════════════════════════════════════════════════════════════════════════════
+    /**
+     * DELETE a record by primary key
+     * 
+     * @param config Configuration map
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> void delete(Map<String, Object> config) {
+        validateRequired(config, "class", "table", "id");
+
+        Class<T> entityClass = (Class<T>) config.get("class");
+        String tableName = (String) config.get("table");
+        String primaryKey = (String) config.getOrDefault("pk", "id");
+        String idValue = String.valueOf(config.get("id"));
+
+        getInstance(entityClass, tableName, primaryKey).delete(idValue);
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // HELPER METHODS
+    // ═════════════════════════════════════════════════════════════════════════════
+    /**
+     * Validate that required keys exist in the config map
+     */
+    private static void validateRequired(Map<String, Object> config, String... requiredKeys) {
+        if (config == null) {
+            throw new IllegalArgumentException("Config map cannot be null");
+        }
+
+        for (String key : requiredKeys) {
+            if (!config.containsKey(key)) {
+                throw new IllegalArgumentException("Missing required key: '" + key + "'");
+            }
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // INSTANCE METHODS (used internally by static methods)
+    // ═════════════════════════════════════════════════════════════════════════════
+
     @Override
     public void create(T entity) {
         Field[] entityFields = entityClass.getDeclaredFields();
@@ -85,7 +417,6 @@ public class GenericSQLiteCRUD<T> implements CRUD<T> {
                 fieldsToInsert.add(currentField);
 
             } catch (IllegalAccessException ignoredException) {
-                // Skip inaccessible fields
             }
         }
 
@@ -107,12 +438,6 @@ public class GenericSQLiteCRUD<T> implements CRUD<T> {
         }
     }
 
-    /**
-     * Read (SELECT) a single entity by primary key
-     * 
-     * @param primaryKeyValue The primary key value to search for
-     * @return The entity object, or null if not found
-     */
     @Override
     public T read(String primaryKeyValue) {
         String selectSQL = "SELECT * FROM " + tableName + " WHERE " + primaryKeyColumnName + " = ?";
@@ -136,18 +461,6 @@ public class GenericSQLiteCRUD<T> implements CRUD<T> {
         return null;
     }
 
-    /**
-     * Read all entities with optional filters, column selection, ordering, and
-     * limit
-     * 
-     * @param columnsToSelect  List of column names to retrieve (null or empty for
-     *                         all columns "*")
-     * @param filterConditions Map of column->value pairs for WHERE clause (AND
-     *                         logic)
-     * @param orderByClause    ORDER BY clause (e.g., "name ASC, date DESC")
-     * @param resultLimit      Maximum number of rows to return (null for no limit)
-     * @return List of matching entities
-     */
     public List<T> readAll(List<String> columnsToSelect, Map<String, Object> filterConditions, String orderByClause,
             Integer resultLimit) {
         String selectedColumns = (columnsToSelect == null || columnsToSelect.isEmpty()) ? "*"
@@ -155,7 +468,6 @@ public class GenericSQLiteCRUD<T> implements CRUD<T> {
         StringBuilder selectSQLBuilder = new StringBuilder("SELECT " + selectedColumns + " FROM " + tableName);
         List<Object> queryParameters = new ArrayList<>();
 
-        // Build WHERE clause with filters
         if (filterConditions != null && !filterConditions.isEmpty()) {
             selectSQLBuilder.append(" WHERE ");
             int filterIndex = 0;
@@ -169,12 +481,10 @@ public class GenericSQLiteCRUD<T> implements CRUD<T> {
             }
         }
 
-        // Add ORDER BY clause
         if (orderByClause != null && !orderByClause.isEmpty()) {
             selectSQLBuilder.append(" ORDER BY ").append(orderByClause);
         }
 
-        // Add LIMIT clause
         if (resultLimit != null && resultLimit > 0) {
             selectSQLBuilder.append(" LIMIT ").append(resultLimit);
         }
@@ -183,7 +493,6 @@ public class GenericSQLiteCRUD<T> implements CRUD<T> {
                 PreparedStatement preparedStatement = databaseConnection
                         .prepareStatement(selectSQLBuilder.toString())) {
 
-            // Set WHERE clause parameters
             for (int parameterIndex = 0; parameterIndex < queryParameters.size(); parameterIndex++) {
                 preparedStatement.setObject(parameterIndex + 1, queryParameters.get(parameterIndex));
             }
@@ -203,12 +512,6 @@ public class GenericSQLiteCRUD<T> implements CRUD<T> {
         }
     }
 
-    /**
-     * Update entity using the entity object
-     * Only non-null fields (excluding primary key) are updated
-     * 
-     * @param entity The entity with updated values (must have primary key set)
-     */
     @Override
     public void update(T entity) {
         Field[] entityFields = entityClass.getDeclaredFields();
@@ -219,7 +522,6 @@ public class GenericSQLiteCRUD<T> implements CRUD<T> {
             currentField.setAccessible(true);
 
             try {
-                // Extract primary key value but don't update it
                 if (currentField.getName().equals(primaryKeyColumnName)) {
                     primaryKeyValue = currentField.get(entity);
                     continue;
@@ -231,15 +533,13 @@ public class GenericSQLiteCRUD<T> implements CRUD<T> {
                 }
 
             } catch (IllegalAccessException ignoredException) {
-                // Skip inaccessible fields
             }
         }
 
         if (fieldsToUpdate.isEmpty()) {
-            return; // Nothing to update
+            return;
         }
 
-        // Build UPDATE SQL
         StringBuilder updateSQLBuilder = new StringBuilder("UPDATE ").append(tableName).append(" SET ");
 
         for (int fieldIndex = 0; fieldIndex < fieldsToUpdate.size(); fieldIndex++) {
@@ -257,13 +557,11 @@ public class GenericSQLiteCRUD<T> implements CRUD<T> {
 
             int parameterIndex = 1;
 
-            // Set field values to update
             for (Field fieldToUpdate : fieldsToUpdate) {
                 Object fieldValue = fieldToUpdate.get(entity);
                 preparedStatement.setObject(parameterIndex++, fieldValue);
             }
 
-            // Set primary key value for WHERE clause
             preparedStatement.setObject(parameterIndex, primaryKeyValue);
 
             preparedStatement.executeUpdate();
@@ -273,25 +571,11 @@ public class GenericSQLiteCRUD<T> implements CRUD<T> {
         }
     }
 
-    /**
-     * Update specific columns by primary key using a Map
-     * 
-     * @param primaryKeyValue The primary key value of the record to update
-     * @param columnUpdates   Map of column names to their new values
-     * 
-     *                        Example usage:
-     *                        Map<String, Object> updates = new HashMap<>();
-     *                        updates.put("name", "John Doe");
-     *                        updates.put("age", 30);
-     *                        updates.put("email", "john@example.com");
-     *                        crud.update("user_123", updates);
-     */
     public void update(Object primaryKeyValue, Map<String, Object> columnUpdates) {
         if (columnUpdates == null || columnUpdates.isEmpty()) {
-            return; // Nothing to update
+            return;
         }
 
-        // Build UPDATE SQL
         StringBuilder updateSQLBuilder = new StringBuilder("UPDATE ").append(tableName).append(" SET ");
 
         int columnIndex = 0;
@@ -310,12 +594,10 @@ public class GenericSQLiteCRUD<T> implements CRUD<T> {
 
             int parameterIndex = 1;
 
-            // Set column values to update
             for (Object newValue : columnUpdates.values()) {
                 preparedStatement.setObject(parameterIndex++, newValue);
             }
 
-            // Set primary key value for WHERE clause
             preparedStatement.setObject(parameterIndex, primaryKeyValue);
 
             preparedStatement.executeUpdate();
@@ -327,11 +609,6 @@ public class GenericSQLiteCRUD<T> implements CRUD<T> {
         }
     }
 
-    /**
-     * Delete (DELETE) an entity by primary key
-     * 
-     * @param primaryKeyValue The primary key value of the record to delete
-     */
     @Override
     public void delete(String primaryKeyValue) {
         String deleteSQL = "DELETE FROM " + tableName + " WHERE " + primaryKeyColumnName + " = ?";
@@ -348,18 +625,11 @@ public class GenericSQLiteCRUD<T> implements CRUD<T> {
         }
     }
 
-    /**
-     * Map a ResultSet row to an entity object using reflection
-     * 
-     * @param queryResults The ResultSet positioned at a specific row
-     * @return The mapped entity object
-     */
     private T mapResultSetRowToEntity(ResultSet queryResults) throws Exception {
         T entityInstance = entityClass.getDeclaredConstructor().newInstance();
         ResultSetMetaData resultMetadata = queryResults.getMetaData();
         int columnCount = resultMetadata.getColumnCount();
 
-        // Extract all column values from ResultSet
         Map<String, Object> rowData = new HashMap<>();
         for (int columnIndex = 1; columnIndex <= columnCount; columnIndex++) {
             String columnName = resultMetadata.getColumnLabel(columnIndex);
@@ -367,7 +637,6 @@ public class GenericSQLiteCRUD<T> implements CRUD<T> {
             rowData.put(columnName, columnValue);
         }
 
-        // Map column values to entity fields
         for (Field entityField : entityClass.getDeclaredFields()) {
             entityField.setAccessible(true);
 
@@ -381,5 +650,22 @@ public class GenericSQLiteCRUD<T> implements CRUD<T> {
         }
 
         return entityInstance;
+    }
+
+    /**
+     * Convert a ResultSet row to a Map (helper for GUI display)
+     */
+    private static Map<String, Object> resultSetToMap(ResultSet queryResults) throws SQLException {
+        ResultSetMetaData resultMetadata = queryResults.getMetaData();
+        int columnCount = resultMetadata.getColumnCount();
+        Map<String, Object> rowData = new HashMap<>();
+
+        for (int columnIndex = 1; columnIndex <= columnCount; columnIndex++) {
+            String columnName = resultMetadata.getColumnLabel(columnIndex);
+            Object columnValue = queryResults.getObject(columnIndex);
+            rowData.put(columnName, columnValue);
+        }
+
+        return rowData;
     }
 }
