@@ -8,12 +8,8 @@ import gitgud.pfm.Models.Goal;
 import gitgud.pfm.Models.Transaction;
 import gitgud.pfm.Models.Budget;
 import gitgud.pfm.Models.Account;
-import gitgud.pfm.services.CategoryService;
-import gitgud.pfm.services.AccountService;
-import gitgud.pfm.services.BudgetService;
-import gitgud.pfm.services.GoalService;
-import gitgud.pfm.services.TransactionService;
 import gitgud.pfm.Models.Category;
+import gitgud.pfm.services.*;
 
 import java.io.IOException;
 
@@ -24,6 +20,10 @@ import java.io.IOException;
 public class CliController {
     private Scanner scanner;
     private boolean running = true;
+
+    // TODO this should encapsulate all loaded data from various services below
+    private AccountDataLoader.DataHolder accountData;
+
     private final CategoryService categoryService = new CategoryService();
     private final AccountService accountService = new AccountService();
     private final BudgetService budgetService = new BudgetService();
@@ -33,7 +33,7 @@ public class CliController {
     public CliController() {
         this.scanner = new Scanner(System.in);
     }
-    
+
     /**
      * Start the CLI application
      */
@@ -42,37 +42,21 @@ public class CliController {
         mainMenuLoop();
         shutdown();
     }
-
-    // TODO: Move to CategoryService
-    @Deprecated
-    private void printAllCategories() {
-        var defaultCategories = categoryService.getDefaultCategories();
-        System.out.println("Available Categories:");
-        System.out.println("Expense Categories:");
-        for (Category cat : defaultCategories) {
-            if (cat.getType() == Category.Type.EXPENSE) {
-                System.out.println("  - " + cat.getName());
-            }
-        }
-        System.out.println("Income Categories:");
-        for (Category cat : defaultCategories) {
-            if (cat.getType() == Category.Type.INCOME) {
-                System.out.println("  - " + cat.getName());
-            }
-        }
-        System.out.println();
-    }
     
     /**
      * Main menu loop - handles user input and navigation
      */
     private void mainMenuLoop() {
+        String defaultAccountID = "default-account-id";
+        this.accountData = AccountDataLoader.loadAccountData(defaultAccountID);
+        // Read Data from Database using id form Wallet,Transaction,Budget,Goal Services
         while (running) {
+
             printMainMenu();
             System.out.println();
             System.out.print("Please select an option: ");
             String input = scanner.nextLine().trim();
-            
+
             switch (input) {
                 case "1":
                     handleAccountSummary();
@@ -104,13 +88,13 @@ public class CliController {
                 default:
                     System.out.println("Invalid option. Please try again.");
             }
-            
+
             System.out.println();
             pauseConsole();
             clearConsole();
         }
     }
-    
+
     // "handle" prefix refers to dealing with user input rather than logic
 
     /**
@@ -249,7 +233,7 @@ public class CliController {
             System.out.println("Total goals: " + goals.size() + "\n");
         }
     }
-    
+
     /**
      * Handle Add Transaction menu option
      */
@@ -348,7 +332,7 @@ public class CliController {
         transactionService.create(transaction);
         System.out.println("Transaction created: " + transaction.getName());
     }
-    
+
     /**
      * Handle View Reports menu option
      */
@@ -356,7 +340,7 @@ public class CliController {
         System.out.println("View Reports feature is not implemented yet.");
         // TODO: Call ReportService to display reports
     }
-    
+
     /**
      * Handle Exit menu option
      */
@@ -364,7 +348,7 @@ public class CliController {
         System.out.println("Exiting the Personal Finance Manager CLI. Goodbye!");
         exitProgram();
     }
-    
+
     private void printWelcomeMessage() {
         System.out.println("Welcome to the Personal Finance Manager CLI!");
         System.out.println("-------------------------------------------");
@@ -380,7 +364,7 @@ public class CliController {
         System.out.println("6. View All Goals");
         System.out.println("7. Add Goal");
         System.out.println("8. View Reports");
-        System.out.println("9. Exit");
+        System.out.println("0. Exit");
     }
 
     /**
@@ -466,8 +450,7 @@ public class CliController {
         try {
             if (System.getProperty("os.name").contains("Windows")) {
                 new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
-            }
-            else {
+            } else {
                 System.out.print("\033\143");
             }
         } catch (IOException | InterruptedException ex) {

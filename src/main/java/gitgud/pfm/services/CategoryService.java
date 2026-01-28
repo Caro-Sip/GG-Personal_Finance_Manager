@@ -24,6 +24,7 @@ public class CategoryService {
         );
     }
 
+    // TODO deprecated custom category management - replace with DB persistence later
     public void addCustomCategory(Category category) {
         // Assign a unique id and mark as custom
         category.setId(String.valueOf(customIdCounter.getAndIncrement()));
