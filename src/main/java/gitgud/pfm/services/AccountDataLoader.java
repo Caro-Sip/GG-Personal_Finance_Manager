@@ -1,9 +1,6 @@
 package gitgud.pfm.services;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
- 
 
 import gitgud.pfm.Models.*;
 
@@ -53,48 +50,37 @@ public class AccountDataLoader {
         DataHolder data = new DataHolder();
 
         // Budgets: read all budgets (public data)
-        Map<String, Object> config = new HashMap<>();
-        config.put("class", Budget.class);
-        config.put("table", "Budget");
-        config.put("orderBy", "start_date DESC");
         try {
-            data.budgets = GenericSQLiteService.readAll(config);
+            BudgetService budgetService = new BudgetService();
+            data.budgets = budgetService.readAll();
         } catch (Exception e) {
             System.err.println("Warning: failed to read budgets: " + e.getMessage());
             data.budgets = new java.util.ArrayList<>();
         }
 
-        // Transactions: read all transactions where AccountID = keyString
-        config.clear();
-        Map<String, Object> txFilters = new HashMap<>();
-        txFilters.put("AccountID", accountID);
-        config.put("class", Transaction.class);
-        config.put("table", "transaction_records");
-        config.put("filters", txFilters);
-        config.put("orderBy", "Create_time DESC");
-        data.transactions = GenericSQLiteService.readAll(config);
+        // Transactions: read all transactions where AccountID = accountID
+        try {
+            TransactionService txService = new TransactionService();
+            data.transactions = txService.readByAccount(accountID);
+        } catch (Exception e) {
+            System.err.println("Warning: failed to read transactions: " + e.getMessage());
+            data.transactions = new java.util.ArrayList<>();
+        }
 
         // Account: read Account by primary key 'AccountID'
-        config.clear();
-        config.put("class", Account.class);
-        config.put("table", "Accounts");
-        config.put("pk", "AccountID");
-        config.put("id", accountID);
         try {
-            gitgud.pfm.Models.Account Account = GenericSQLiteService.read(config);
-            data.setAccount(Account);
+            AccountService accountService = new AccountService();
+            gitgud.pfm.Models.Account account = accountService.read(accountID);
+            data.setAccount(account);
         } catch (Exception e) {
             System.err.println("Warning: failed to read Account with AccountID = " + accountID + ": " + e.getMessage());
             data.setAccount(null);
         }
 
         // Goals: read all goals (public data)
-        config.clear();
-        config.put("class", Goal.class);
-        config.put("table", "Goal");
-        config.put("orderBy", "createAt DESC");
         try {
-            data.goals = GenericSQLiteService.readAll(config);
+            GoalService goalService = new GoalService();
+            data.goals = goalService.readAll();
         } catch (Exception e) {
             System.err.println("Warning: failed to read goals: " + e.getMessage());
             data.goals = new java.util.ArrayList<>();

@@ -13,6 +13,9 @@ public class Database {
         try {
             this.connection = DriverManager.getConnection(DB_URL);
             System.out.println("Connection to SQLite has been established.");
+            
+            // Initialize database schema on first connection
+            DatabaseInitializer.initializeDatabase(this.connection);
         } catch (SQLException e) {
             System.err.println("Database connection failed: " + e.getMessage());
             throw new RuntimeException("Failed to connect to database", e);
