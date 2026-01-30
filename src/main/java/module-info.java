@@ -4,13 +4,13 @@ module gitgud.pfm {
     requires java.sql;
     requires transitive javafx.graphics;
     requires org.xerial.sqlitejdbc;
+    
     //Open is like a pointer telling the controllers where the fxml is
-    //opens gitgud.pfm to javafx.fxml;
     opens gitgud.pfm.Controllers to javafx.fxml;
-    opens gitgud.pfm.FinanceAppcopy.model to javafx.base;
-    opens gitgud.pfm.FinanceAppcopy.ui to javafx.fxml;
-    // TODO if you want to include Models into compilation
-    // opens gitgud.pfm.Models to javafx.fxml;
+    opens gitgud.pfm.GUI to javafx.fxml;
+    opens gitgud.pfm.GUI.data to javafx.fxml;
+    
     exports gitgud.pfm;
-    exports gitgud.pfm.FinanceAppcopy;
+    exports gitgud.pfm.GUI;
+    exports gitgud.pfm.GUI.data;
 }

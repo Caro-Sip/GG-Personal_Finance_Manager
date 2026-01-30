@@ -58,7 +58,7 @@ public class CategoryController implements Initializable {
 	@FXML
 	private void goBack() {
 		try {
-			App.setRoot("primary");
+			System.out.println("Going back to primary view");
 		} catch (Exception e) {
 			showAlert("Failed to go back: " + e.getMessage());
 		}

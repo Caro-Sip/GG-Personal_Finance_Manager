@@ -1,8 +1,9 @@
-package gitgud.pfm.FinanceAppcopy.ui;
+package gitgud.pfm.GUI;
 
-import gitgud.pfm.FinanceAppcopy.data.DataStore;
-import gitgud.pfm.FinanceAppcopy.model.Goal;
-import gitgud.pfm.FinanceAppcopy.model.Transaction;
+import gitgud.pfm.GUI.data.DataStore;
+import gitgud.pfm.Models.Goal;
+import gitgud.pfm.Models.Transaction;
+import gitgud.pfm.Models.Wallet;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.chart.LineChart;
@@ -147,7 +148,7 @@ public class DashboardView extends ScrollPane {
         VBox goalsList = new VBox(12);
         
         List<Goal> priorityGoals = dataStore.getGoals().stream()
-                .filter(g -> g.isPriority() && g.getCurrent() < g.getTarget())
+                .filter(g -> g.getPriority() > 5 && g.getBalance() < g.getTarget())
                 .collect(Collectors.toList());
         
         for (Goal goal : priorityGoals) {
@@ -176,20 +177,20 @@ public class DashboardView extends ScrollPane {
         VBox info = new VBox(4);
         HBox.setHgrow(info, Priority.ALWAYS);
         
-        Label titleLabel = new Label(goal.getTitle());
+        Label titleLabel = new Label(goal.getName());
         titleLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: 600; -fx-text-fill: #1e293b;");
         
         HBox meta = new HBox(8);
         meta.setAlignment(Pos.CENTER_LEFT);
         
-        Label amounts = new Label(String.format("$%.2f / $%.2f", goal.getCurrent(), goal.getTarget()));
+        Label amounts = new Label(String.format("$%.2f / $%.2f", goal.getBalance(), goal.getTarget()));
         amounts.setStyle("-fx-font-size: 13px; -fx-text-fill: #64748b;");
         
         Label dot = new Label("•");
         dot.setStyle("-fx-text-fill: #64748b;");
         
-        long daysLeft = ChronoUnit.DAYS.between(LocalDateTime.now().toLocalDate(), goal.getDeadline());
-        Label deadline = new Label(daysLeft > 0 ? daysLeft + " days left" : "Overdue");
+        String deadlineStr = goal.getDeadline() != null ? goal.getDeadline() : "No deadline";
+        Label deadline = new Label(deadlineStr);
         deadline.setStyle("-fx-font-size: 13px; -fx-text-fill: #64748b;");
         
         meta.getChildren().addAll(amounts, dot, deadline);
@@ -199,12 +200,13 @@ public class DashboardView extends ScrollPane {
         progressBox.setAlignment(Pos.CENTER_LEFT);
         progressBox.setPrefWidth(140);
         
-        ProgressBar miniProgress = new ProgressBar(goal.getProgress() / 100.0);
+        double progressPercent = goal.getTarget() > 0 ? (goal.getBalance() / goal.getTarget()) * 100 : 0;
+        ProgressBar miniProgress = new ProgressBar(Math.min(1.0, progressPercent / 100.0));
         miniProgress.setPrefHeight(8);
         miniProgress.setPrefWidth(80);
         miniProgress.setStyle("-fx-accent: #f59e0b;");
         
-        Label percent = new Label(String.format("%.0f%%", goal.getProgress()));
+        Label percent = new Label(String.format("%.0f%%", progressPercent));
         percent.setStyle("-fx-font-size: 14px; -fx-font-weight: 600; -fx-text-fill: #1e293b;");
         
         progressBox.getChildren().addAll(miniProgress, percent);
@@ -298,7 +300,7 @@ public class DashboardView extends ScrollPane {
         VBox transactionsList = new VBox(4);
         
         List<Transaction> transactions = dataStore.getTransactions().stream()
-                .sorted((a, b) -> b.getTime().compareTo(a.getTime()))
+                .sorted((a, b) -> b.getCreateTime().compareTo(a.getCreateTime()))
                 .limit(10)
                 .collect(Collectors.toList());
         
@@ -318,24 +320,24 @@ public class DashboardView extends ScrollPane {
         item.setStyle("-fx-border-color: #f1f5f9; -fx-border-width: 0 0 1 0;");
         
         // Icon
-        StackPane icon = createTransactionIcon(tx.getCategory());
+        StackPane icon = createTransactionIcon(tx.getCategoryId());
         
         // Details
         VBox details = new VBox(3);
         HBox.setHgrow(details, Priority.ALWAYS);
         HBox.setMargin(details, new Insets(0, 14, 0, 14));
         
-        Label titleLabel = new Label(tx.getTitle());
+        Label titleLabel = new Label(tx.getName());
         titleLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: 500; -fx-text-fill: #1e293b;");
         
-        Label timeLabel = new Label(formatTime(tx.getTime()));
+        Label timeLabel = new Label(tx.getCreateTime());
         timeLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #64748b;");
         
         details.getChildren().addAll(titleLabel, timeLabel);
         
         // Amount
-        String sign = tx.getType().equals("income") ? "+" : "-";
-        String color = tx.getType().equals("income") ? "#22c55e" : "#ef4444";
+        String sign = tx.getIncome() > 0 ? "+" : "-";
+        String color = tx.getIncome() > 0 ? "#22c55e" : "#ef4444";
         
         Label amount = new Label(sign + String.format("$%.2f", tx.getAmount()));
         amount.setStyle("-fx-font-size: 16px; -fx-font-weight: 600; -fx-text-fill: " + color + ";");
@@ -415,12 +417,7 @@ public class DashboardView extends ScrollPane {
         double budgetLimit = 3000.0;
         LocalDateTime now = LocalDateTime.now();
         
-        double totalSpent = dataStore.getTransactions().stream()
-                .filter(t -> t.getType().equals("expense"))
-                .filter(t -> t.getTime().getMonth() == now.getMonth() && 
-                           t.getTime().getYear() == now.getYear())
-                .mapToDouble(Transaction::getAmount)
-                .sum();
+        double totalSpent = dataStore.getTotalExpenses();
         
         double percent = Math.min(100, (totalSpent / budgetLimit) * 100);
         double remaining = Math.max(0, budgetLimit - totalSpent);

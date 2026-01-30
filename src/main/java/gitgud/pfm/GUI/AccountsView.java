@@ -1,36 +1,219 @@
 package gitgud.pfm.GUI;
 
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.layout.StackPane;
-import javafx.stage.Stage;
+import gitgud.pfm.GUI.data.DataStore;
+import gitgud.pfm.Models.Wallet;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
 
-public class AccountsView extends Application {
+import java.util.List;
 
-    @Override
-    public void start(Stage primaryStage) {
-        // 1. Create a UI control (a Button)
-        Button btn = new Button();
-        btn.setText("Say 'Hello World'");
-        btn.setOnAction(event -> {
-            System.out.println("Hello World!");
-        });
+public class AccountsView extends ScrollPane {
 
-        // 2. Create a layout pane and add the control
-        StackPane root = new StackPane();
-        root.getChildren().add(btn);
+    private final DataStore dataStore;
+    private final VBox mainContent;
+    private VBox accountsList;
+    private HBox summarySection;
 
-        // 3. Create a scene, add the layout to it, and set dimensions
-        Scene scene = new Scene(root, 300, 250);
+    public AccountsView() {
+        dataStore = DataStore.getInstance();
 
-        // 4. Configure the stage (window) and set the scene
-        primaryStage.setTitle("Hello World!");
-        primaryStage.setScene(scene);
-        primaryStage.show(); // Display the window
+        mainContent = new VBox(24);
+        mainContent.setPadding(new Insets(28));
+        mainContent.setStyle("-fx-background-color: #f0f2f5;");
+
+        HBox header = createHeader();
+        summarySection = createSummaryCards();
+        VBox accountsCard = createAccountsCard();
+
+        mainContent.getChildren().addAll(header, summarySection, accountsCard);
+
+        setContent(mainContent);
+        setFitToWidth(true);
+        setStyle("-fx-background-color: #f0f2f5; -fx-background: #f0f2f5;");
+
+        loadAccounts();
     }
 
-    public static void main(String[] args) {
-        launch(args);
+    private HBox createHeader() {
+        HBox header = new HBox(16);
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        Label title = new Label("Accounts");
+        title.setStyle("-fx-font-size: 28px; -fx-font-weight: 700; -fx-text-fill: #1e293b;");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Button addButton = new Button("Add Account");
+        addButton.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; " +
+                "-fx-font-size: 14px; -fx-font-weight: 600; -fx-padding: 12 24; " +
+                "-fx-background-radius: 8; -fx-cursor: hand;");
+        addButton.setOnAction(e -> showAddAccountDialog());
+
+        header.getChildren().addAll(title, spacer, addButton);
+        return header;
+    }
+
+    private HBox createSummaryCards() {
+        HBox summary = new HBox(16);
+
+        List<Wallet> wallets = dataStore.getWallets();
+
+        double totalBalance = wallets.stream().mapToDouble(Wallet::getBalance).sum();
+        double totalAssets = Math.max(0, totalBalance);
+        double totalLiabilities = Math.abs(Math.min(0, totalBalance));
+        double netWorth = totalBalance;
+
+        VBox assetsCard = createSummaryCard("Total Assets", totalAssets, "#22c55e");
+        VBox liabilitiesCard = createSummaryCard("Total Liabilities", totalLiabilities, "#ef4444");
+        VBox netWorthCard = createSummaryCard("Net Worth", netWorth, "#3b82f6");
+
+        HBox.setHgrow(assetsCard, Priority.ALWAYS);
+        HBox.setHgrow(liabilitiesCard, Priority.ALWAYS);
+        HBox.setHgrow(netWorthCard, Priority.ALWAYS);
+
+        summary.getChildren().addAll(assetsCard, liabilitiesCard, netWorthCard);
+        return summary;
+    }
+
+    private VBox createSummaryCard(String label, double amount, String color) {
+        VBox card = new VBox(12);
+        card.setStyle("-fx-background-color: white; -fx-background-radius: 16; " +
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 3, 0, 0, 1);");
+        card.setPadding(new Insets(24));
+        card.setAlignment(Pos.CENTER_LEFT);
+
+        HBox header = new HBox(12);
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        Label titleLabel = new Label(label);
+        titleLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #64748b; -fx-font-weight: 600;");
+
+        header.getChildren().addAll(titleLabel);
+
+        Label amountLabel = new Label(String.format("$%.2f", amount));
+        amountLabel.setStyle("-fx-font-size: 32px; -fx-font-weight: 700; -fx-text-fill: " + color + ";");
+
+        card.getChildren().addAll(header, amountLabel);
+        return card;
+    }
+
+    private VBox createAccountsCard() {
+        VBox card = new VBox(16);
+        card.setStyle("-fx-background-color: white; -fx-background-radius: 16; " +
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 3, 0, 0, 1);");
+        card.setPadding(new Insets(24));
+
+        Label cardTitle = new Label("All Accounts");
+        cardTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: #1e293b;");
+
+        accountsList = new VBox(12);
+
+        card.getChildren().addAll(cardTitle, accountsList);
+        return card;
+    }
+
+    private void loadAccounts() {
+        accountsList.getChildren().clear();
+        List<Wallet> wallets = dataStore.getWallets();
+        for (Wallet wallet : wallets) {
+            HBox accountCard = createAccountCard(wallet);
+            accountsList.getChildren().add(accountCard);
+        }
+    }
+
+    private HBox createAccountCard(Wallet wallet) {
+        HBox card = new HBox(12);
+        card.setAlignment(Pos.CENTER_LEFT);
+        card.setPadding(new Insets(16));
+        card.setStyle("-fx-background-color: #f8fafc; -fx-background-radius: 12;");
+
+        Region avatar = new Region();
+        avatar.setPrefSize(56, 56);
+        avatar.setStyle("-fx-background-color: #3b82f6; -fx-background-radius: 12;");
+
+        VBox details = new VBox(4);
+        HBox.setHgrow(details, Priority.ALWAYS);
+
+        Label name = new Label(wallet.getName());
+        name.setStyle("-fx-font-size: 16px; -fx-font-weight: 600; -fx-text-fill: #1e293b;");
+
+        details.getChildren().add(name);
+
+        VBox balanceBox = new VBox(4);
+        balanceBox.setAlignment(Pos.CENTER_RIGHT);
+
+        String balanceColor = wallet.getBalance() >= 0 ? "#22c55e" : "#ef4444";
+        Label balance = new Label(String.format("$%.2f", Math.abs(wallet.getBalance())));
+        balance.setStyle("-fx-font-size: 18px; -fx-font-weight: 700; -fx-text-fill: " + balanceColor + ";");
+
+        Label balanceLabel = new Label(wallet.getBalance() >= 0 ? "Available" : "Due");
+        balanceLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #94a3b8;");
+
+        balanceBox.getChildren().addAll(balance, balanceLabel);
+
+        card.getChildren().addAll(avatar, details, balanceBox);
+        return card;
+    }
+
+    private void showAddAccountDialog() {
+        Dialog<Wallet> dialog = new Dialog<>();
+        dialog.setTitle("Add New Wallet");
+        dialog.setHeaderText("Enter wallet details");
+
+        ButtonType addButtonType = new ButtonType("Add", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(addButtonType, ButtonType.CANCEL);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20));
+
+        TextField nameField = new TextField();
+        nameField.setPromptText("Wallet name");
+
+        ComboBox<String> typeBox = new ComboBox<>();
+        typeBox.getItems().addAll("bank", "cash", "credit");
+        typeBox.setValue("bank");
+
+        TextField balanceField = new TextField();
+        balanceField.setPromptText("0.00");
+        balanceField.setText("0");
+
+        grid.add(new Label("Wallet Name:"), 0, 0);
+        grid.add(nameField, 1, 0);
+        grid.add(new Label("Wallet Type:"), 0, 1);
+        grid.add(typeBox, 1, 1);
+        grid.add(new Label("Initial Balance:"), 0, 2);
+        grid.add(balanceField, 1, 2);
+
+        dialog.getDialogPane().setContent(grid);
+
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == addButtonType) {
+                try {
+                    double balance = Double.parseDouble(balanceField.getText());
+                    return new Wallet(nameField.getText(), balance, typeBox.getValue());
+                } catch (NumberFormatException e) {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setContentText("Invalid balance!");
+                    alert.show();
+                    return null;
+                }
+            }
+            return null;
+        });
+
+        dialog.showAndWait().ifPresent(wallet -> {
+            dataStore.addWallet(wallet);
+            refreshView();
+        });
+    }
+
+    private void refreshView() {
+        loadAccounts();
+        mainContent.getChildren().set(1, createSummaryCards());
     }
 }

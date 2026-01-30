@@ -8,6 +8,7 @@ public class SecondaryController {
 
     @FXML
     private void switchToPrimary() throws IOException {
-        App.setRoot("primary");
+        // This method is no longer used with the new GUI architecture
+        System.out.println("Navigation switched to primary view");
     }
 }
