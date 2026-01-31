@@ -25,15 +25,14 @@ public class CliController {
     private boolean running = true;
 
     private AccountDataLoader.DataHolder accountData;
-    private String currentAccountID = "default-account-id";
-    
+
     // Services for create/update operations
     private final CategoryService categoryService = new CategoryService();
     private final WalletService walletService = new WalletService();
     private final BudgetService budgetService = new BudgetService();
     private final GoalService goalService = new GoalService();
     private final TransactionService transactionService = new TransactionService();
-    
+
     public CliController() {
         this.scanner = new Scanner(System.in);
     }
@@ -47,7 +46,7 @@ public class CliController {
         mainMenuLoop();
         shutdown();
     }
-    
+
     /**
      * Initialize default wallets if none exist
      */
@@ -55,17 +54,17 @@ public class CliController {
         List<Wallet> wallets = walletService.readAll();
         if (wallets.isEmpty()) {
             System.out.println("Initializing default wallets...");
-            
+
             Wallet cashWallet = new Wallet("Green", 0.0, "Cash");
             Wallet cardWallet = new Wallet("Blue", 0.0, "Card");
-            
+
             walletService.create(cashWallet);
             walletService.create(cardWallet);
-            
+
             System.out.println("Default wallets created: Cash and Card\n");
         }
     }
-    
+
     /**
      * Main menu loop - handles user input and navigation
      */
@@ -89,7 +88,7 @@ public class CliController {
                     handleAddTransaction();
                     break;
                 case "4":
-                    handleUpdateTransaction(currentAccountID, accountData);
+                    handleUpdateTransaction(accountData);
                     break;
                 case "5":
                     System.out.println("Delete Transaction feature not yet implemented.");
@@ -101,7 +100,7 @@ public class CliController {
                     handleAddBudget();
                     break;
                 case "8":
-                    handleUpdateBudget(currentAccountID, accountData);
+                    handleUpdateBudget(accountData);
                     break;
                 case "9":
                     System.out.println("Delete Budget feature not yet implemented.");
@@ -113,31 +112,22 @@ public class CliController {
                     handleAddGoal();
                     break;
                 case "12":
-                    handleUpdateGoal(currentAccountID, accountData);
+                    handleUpdateGoal(accountData);
                     break;
                 case "13":
-                System.out.println("Delete Goal feature not yet implemented.");
-                break;
+                    System.out.println("Delete Goal feature not yet implemented.");
+                    break;
                 case "14":
-                    handleDeleteTransaction(currentAccountID, accountData);
+                    handleDeleteTransaction(accountData);
                     break;
                 case "15":
-                    handleDeleteBudget(currentAccountID, accountData);
+                    handleDeleteBudget(accountData);
                     break;
                 case "16":
-                    handleDeleteGoal(currentAccountID, accountData);
+                    handleDeleteGoal(accountData);
                     break;
                 case "17":
                     handleViewReports(accountData);
-                    break;
-                case "18":
-                    AddWallet();
-                    break;
-                case "19":
-                    UpdateWallet();
-                    break;
-                case "20":
-                    DeleteWallet();
                     break;
                 case "0":
                     // looks for users input then call exit program
@@ -161,9 +151,9 @@ public class CliController {
      */
     private void handleAccountSummary() {
         System.out.println("=== Account Summary ===");
-        
+
         List<Wallet> wallets = walletService.readAll();
-        
+
         if (wallets.isEmpty()) {
             System.out.println("No accounts found.");
         } else {
@@ -171,29 +161,29 @@ public class CliController {
             System.out.println("----------------------------------------");
             System.out.printf("%-15s %-20s %15s\n", "Account ID", "Name", "Balance");
             System.out.println("----------------------------------------");
-            
+
             for (Wallet wallet : wallets) {
-                System.out.printf("%-15s %-20s $%,14.2f\n", 
-                    wallet.getId(), 
-                    wallet.getName(), 
-                    wallet.getBalance());
+                System.out.printf("%-15s %-20s $%,14.2f\n",
+                        wallet.getId(),
+                        wallet.getName(),
+                        wallet.getBalance());
             }
-            
+
             System.out.println("----------------------------------------");
             double totalBalance = walletService.getTotalBalance();
             System.out.printf("%-35s $%,14.2f\n", "Total Balance:", totalBalance);
             System.out.println("========================================\n");
         }
     }
-    
+
     /**
      * Handle View All Transactions
      */
     private void handleViewAllTransactions() {
         System.out.println("=== All Transactions ===");
-        
+
         List<Transaction> transactions = accountData.getTransactions();
-        
+
         if (transactions.isEmpty()) {
             System.out.println("No transactions found.");
         } else {
@@ -203,36 +193,39 @@ public class CliController {
             for (Category category : categories) {
                 categoryMap.put(category.getId(), category.getName());
             }
-            
+
             System.out.println("\nTransactions (most recent first):");
-            System.out.println("--------------------------------------------------------------------------------------------");
-            System.out.printf("%-15s %-20s %-15s %-12s $%-12s %-20s\n", 
-                "ID", "Name", "Category", "Wallet", "Amount", "Date");
-            System.out.println("--------------------------------------------------------------------------------------------");
-            
+            System.out.println(
+                    "--------------------------------------------------------------------------------------------");
+            System.out.printf("%-15s %-20s %-15s %-12s $%-12s %-20s\n",
+                    "ID", "Name", "Category", "Wallet", "Amount", "Date");
+            System.out.println(
+                    "--------------------------------------------------------------------------------------------");
+
             double totalIncome = 0.0;
             double totalExpenses = 0.0;
-            
+
             for (Transaction tx : transactions) {
                 String type = tx.getIncome() == 1 ? "[+]" : "[-]";
                 String categoryName = categoryMap.getOrDefault(tx.getCategoryId(), tx.getCategoryId());
                 System.out.printf("%-15s %-20s %-15s %-12s %s$%-11.2f %-20s\n",
-                    tx.getId(),
-                    tx.getName().length() > 20 ? tx.getName().substring(0, 17) + "..." : tx.getName(),
-                    categoryName,
-                    tx.getWalletId(),
-                    type,
-                    tx.getAmount(),
-                    tx.getCreateTime().length() > 20 ? tx.getCreateTime().substring(0, 19) : tx.getCreateTime());
-                
+                        tx.getId(),
+                        tx.getName().length() > 20 ? tx.getName().substring(0, 17) + "..." : tx.getName(),
+                        categoryName,
+                        tx.getWalletId(),
+                        type,
+                        tx.getAmount(),
+                        tx.getCreateTime().length() > 20 ? tx.getCreateTime().substring(0, 19) : tx.getCreateTime());
+
                 if (tx.getIncome() == 1) {
                     totalIncome += tx.getAmount();
                 } else {
                     totalExpenses += tx.getAmount();
                 }
             }
-            
-            System.out.println("--------------------------------------------------------------------------------------------");
+
+            System.out.println(
+                    "--------------------------------------------------------------------------------------------");
             System.out.println("Total transactions: " + transactions.size());
             System.out.printf("Total Income: $%,.2f\n", totalIncome);
             System.out.printf("Total Expenses: $%,.2f\n", totalExpenses);
@@ -240,69 +233,75 @@ public class CliController {
             System.out.println("\n");
         }
     }
-    
+
     /**
      * Handle View All Budgets
      */
     private void handleViewAllBudgets() {
         System.out.println("=== All Budgets ===");
-        
+
         List<Budget> budgets = accountData.getBudgets();
-        
+
         if (budgets.isEmpty()) {
             System.out.println("No budgets found.");
         } else {
             System.out.println("\nBudgets:");
-            System.out.println("--------------------------------------------------------------------------------------");
-            System.out.printf("%-15s %-20s %12s %12s %-12s %-12s\n", 
-                "ID", "Name", "Limit", "Balance", "Start Date", "End Date");
-            System.out.println("--------------------------------------------------------------------------------------");
-            
+            System.out
+                    .println("--------------------------------------------------------------------------------------");
+            System.out.printf("%-15s %-20s %12s %12s %-12s %-12s\n",
+                    "ID", "Name", "Limit", "Balance", "Start Date", "End Date");
+            System.out
+                    .println("--------------------------------------------------------------------------------------");
+
             for (Budget budget : budgets) {
                 System.out.printf("%-15s %-20s $%,10.2f $%,10.2f %-12s %-12s\n",
-                    budget.getId(),
-                    budget.getName(),
-                    budget.getLimitAmount(),
-                    budget.getBalance(),
-                    budget.getStartDate(),
-                    budget.getEndDate());
+                        budget.getId(),
+                        budget.getName(),
+                        budget.getLimitAmount(),
+                        budget.getBalance(),
+                        budget.getStartDate(),
+                        budget.getEndDate());
             }
-            
-            System.out.println("--------------------------------------------------------------------------------------");
+
+            System.out
+                    .println("--------------------------------------------------------------------------------------");
             System.out.println("Total budgets: " + budgets.size() + "\n");
         }
     }
-    
+
     /**
      * Handle View All Goals
      */
     private void handleViewAllGoals() {
         System.out.println("=== All Goals ===");
-        
+
         List<Goal> goals = accountData.getGoals();
-        
+
         if (goals.isEmpty()) {
             System.out.println("No goals found.");
         } else {
             System.out.println("\nGoals:");
-            System.out.println("-----------------------------------------------------------------------------------------");
-            System.out.printf("%-15s %-20s %12s %12s %10s %-12s\n", 
-                "ID", "Name", "Target", "Current", "Priority", "Deadline");
-            System.out.println("-----------------------------------------------------------------------------------------");
-            
+            System.out.println(
+                    "-----------------------------------------------------------------------------------------");
+            System.out.printf("%-15s %-20s %12s %12s %10s %-12s\n",
+                    "ID", "Name", "Target", "Current", "Priority", "Deadline");
+            System.out.println(
+                    "-----------------------------------------------------------------------------------------");
+
             for (Goal goal : goals) {
                 double progress = goal.getTarget() > 0 ? (goal.getBalance() / goal.getTarget()) * 100 : 0;
                 System.out.printf("%-15s %-20s $%,10.2f $%,10.2f %9.1f %-12s (%.1f%%)\n",
-                    goal.getId(),
-                    goal.getName(),
-                    goal.getTarget(),
-                    goal.getBalance(),
-                    goal.getPriority(),
-                    goal.getDeadline(),
-                    progress);
+                        goal.getId(),
+                        goal.getName(),
+                        goal.getTarget(),
+                        goal.getBalance(),
+                        goal.getPriority(),
+                        goal.getDeadline(),
+                        progress);
             }
-            
-            System.out.println("-----------------------------------------------------------------------------------------");
+
+            System.out.println(
+                    "-----------------------------------------------------------------------------------------");
             System.out.println("Total goals: " + goals.size() + "\n");
         }
     }
@@ -319,7 +318,7 @@ public class CliController {
         var defaultCategories = categoryService.getDefaultCategories();
         System.out.println("Available Categories:");
         int categoryIndex = 1;
-        
+
         System.out.println("Expense Categories:");
         for (Category cat : defaultCategories) {
             if (cat.getType() == Category.Type.EXPENSE) {
@@ -327,7 +326,7 @@ public class CliController {
                 categoryIndex++;
             }
         }
-        
+
         System.out.println("Income Categories:");
         for (Category cat : defaultCategories) {
             if (cat.getType() == Category.Type.INCOME) {
@@ -354,7 +353,7 @@ public class CliController {
         }
         Category.Type chosenType = selectedCategory.getType();
         System.out.println("You selected: " + selectedCategory.getName());
-        
+
         // Enter transaction name (description)
         System.out.print("Enter transaction name: ");
         String name = scanner.nextLine().trim();
@@ -375,9 +374,9 @@ public class CliController {
         }
         System.out.println("Pick an account:");
         for (int i = 0; i < wallets.size(); i++) {
-            System.out.printf("  %d. %s (Balance: $%.2f)\n", i + 1, wallets.get(i).getName(), wallets.get(i).getBalance());
+            System.out.printf("  %d. %s (Balance: $%.2f)\n", i + 1, wallets.get(i).getName(),
+                    wallets.get(i).getBalance());
         }
-        Wallet selectedWallet = null;
         String walletId = null;
         while (walletId == null) {
             System.out.print("Enter the number of the account: ");
@@ -386,11 +385,6 @@ public class CliController {
                 int num = Integer.parseInt(input);
                 if (num >= 1 && num <= wallets.size()) {
                     walletId = wallets.get(num - 1).getId();
-                    selectedWallet = walletService.read(walletId);
-                    if (income == 0 && selectedWallet.getBalance() < amount) {
-                        System.out.println("Warning: Insufficient funds in the selected wallet for this expense.");
-                        return;
-                    }
                 } else {
                     System.out.println("Invalid number. Try again.");
                 }
@@ -399,27 +393,20 @@ public class CliController {
             }
         }
         System.out.println("You selected: " + walletId);
-        if (income == 0) {
-            System.out.println("Expense of $" + amount + " will be deducted from wallet " + walletId);
-            selectedWallet.subtractFromBalance(amount);
-        } else {
-            System.out.println("Income of $" + amount + " will be added to wallet " + walletId);
-            selectedWallet.addToBalance(amount);
-        }
+
         // Only generate timestamp if all inputs are valid
         String timestamp = java.time.LocalDateTime.now().toString();
         String categoryId = selectedCategory.getId();
         Transaction transaction = new Transaction(categoryId, amount, name, income, walletId, timestamp);
-        WalletService walletService = new WalletService();
-        walletService.update(selectedWallet);
+
         // Save to database using TransactionService
         transactionService.create(transaction);
         System.out.println("Transaction created: " + transaction.getName());
-        
+
         // Refresh account data after creating transaction
         this.accountData = AccountDataLoader.loadAccountData();
     }
-    
+
     /**
      * Handle View Reports menu option
      * 
@@ -433,15 +420,16 @@ public class CliController {
      */
     private void handleViewReports(AccountDataLoader.DataHolder accountData) {
         System.out.println("=== View Transaction Reports ===");
-        
+
         // Create a map of category ID to category name
         Map<String, String> categoryMap = new HashMap<>();
         List<Category> categories = categoryService.getDefaultCategories();
         for (Category category : categories) {
             categoryMap.put(category.getId(), category.getName());
         }
-        
-        System.out.printf("%-20s %10s %-20s %10s %-15s %20s%n", "Name", "Amount", "Categories", "Income", "Wallet ID", "Created At");
+
+        System.out.printf("%-20s %10s %-20s %10s %-15s %20s%n", "Name", "Amount", "Categories", "Income", "Wallet ID",
+                "Created At");
         for (Transaction t : accountData.getTransactions()) {
             String categoryName = categoryMap.getOrDefault(t.getCategoryId(), t.getCategoryId());
             System.out.printf("%-20s %10.2f %-20s %10.2f %-15s %20s%n",
@@ -466,17 +454,18 @@ public class CliController {
      */
     private void handleViewBudgets(AccountDataLoader.DataHolder accountData) {
         System.out.println("=== View Budgets ===");
-        System.out.printf("%-20s %10s %10s %-12s %-12s %-20s%n", "Name", "Limits", "Balance", "Start", "End", "Tracked Categories");
+        System.out.printf("%-20s %10s %10s %-12s %-12s %-20s%n", "Name", "Limits", "Balance", "Start", "End",
+                "Tracked Categories");
         for (Budget b : accountData.getBudgets()) {
             System.out.printf("%-20s %10.2f %10.2f %-12s %-12s %-20s%n",
                     b.getName(),
                     b.getLimitAmount(),
                     b.getBalance(),
                     b.getStartDate(),
-                    b.getEndDate()//,
-                    // TODO fix tracked categories display due to the new junction table
-                    // b.getTrackedCategories()
-                    );
+                    b.getEndDate()// ,
+            // TODO fix tracked categories display due to the new junction table
+            // b.getTrackedCategories()
+            );
         }
     }
 
@@ -492,7 +481,8 @@ public class CliController {
      */
     private void handleViewGoals(AccountDataLoader.DataHolder accountData) {
         System.out.println("=== View Goals ===");
-        System.out.printf("%-20s %10s %10s %-12s %10s %20s%n", "Name", "Target", "Current", "Deadline", "Priority", "Created At");
+        System.out.printf("%-20s %10s %10s %-12s %10s %20s%n", "Name", "Target", "Current", "Deadline", "Priority",
+                "Created At");
         for (Goal g : accountData.getGoals()) {
             System.out.printf("%-20s %10.2f %10.2f %-12s %10.2f %20s%n",
                     g.getName(),
@@ -504,8 +494,11 @@ public class CliController {
         }
     }
 
-    /* Update handlers: show view, ask for ID, ask which field, update in-memory and persist */
-    private void handleUpdateTransaction(String accountID, AccountDataLoader.DataHolder accountData) {
+    /*
+     * Update handlers: show view, ask for ID, ask which field, update in-memory and
+     * persist
+     */
+    private void handleUpdateTransaction(AccountDataLoader.DataHolder accountData) {
         System.out.println("=== Update Transaction ===");
         handleViewReports(accountData);
         System.out.print("Enter Transaction Name to update: ");
@@ -550,7 +543,7 @@ public class CliController {
                     var defaultCategories = categoryService.getDefaultCategories();
                     System.out.println("\nAvailable Categories:");
                     int categoryIndex = 1;
-                    
+
                     System.out.println("Expense Categories:");
                     for (Category cat : defaultCategories) {
                         if (cat.getType() == Category.Type.EXPENSE) {
@@ -558,7 +551,7 @@ public class CliController {
                             categoryIndex++;
                         }
                     }
-                    
+
                     System.out.println("Income Categories:");
                     for (Category cat : defaultCategories) {
                         if (cat.getType() == Category.Type.INCOME) {
@@ -566,7 +559,7 @@ public class CliController {
                             categoryIndex++;
                         }
                     }
-                    
+
                     Category selectedCategory = null;
                     while (selectedCategory == null) {
                         System.out.print("Select the category (number): ");
@@ -610,14 +603,8 @@ public class CliController {
                     return;
             }
 
-            Map<String, Object> config = new HashMap<>();
-            config.put("class", Transaction.class);
-            config.put("table", "transaction_records");
-            // transaction_records primary key column is "ID" (uppercase)
-            config.put("pk", "ID");
-            config.put("id", id);
-            config.put("updates", updates);
-            GenericSQLiteService.update(config);
+            // Persist update via TransactionService
+            transactionService.update(found);
 
             System.out.println("Transaction updated.");
             this.accountData = AccountDataLoader.loadAccountData();
@@ -628,7 +615,7 @@ public class CliController {
         }
     }
 
-    private void handleUpdateBudget(String accountID, AccountDataLoader.DataHolder accountData) {
+    private void handleUpdateBudget(AccountDataLoader.DataHolder accountData) {
         System.out.println("=== Update Budget ===");
         handleViewBudgets(accountData);
         System.out.print("Enter Budget name to update: ");
@@ -687,22 +674,18 @@ public class CliController {
                     found.setEndDate(endDate);
                     updates.put("endDate", endDate);
                     break;
-                    // TODO: trackedCategories update handling
+                // TODO: trackedCategories update handling
                 // case "trackedCategoryIds":
-                //     found.setTrackedCategoryIds(newValue);
-                //     updates.put("trackedCategoryIds", newValue);
-                //     break;
+                // found.setTrackedCategoryIds(newValue);
+                // updates.put("trackedCategoryIds", newValue);
+                // break;
                 default:
                     System.out.println("Unknown field.");
                     return;
             }
 
-            Map<String, Object> config = new HashMap<>();
-            config.put("class", Budget.class);
-            config.put("table", "Budget");
-            config.put("id", id);
-            config.put("updates", updates);
-            GenericSQLiteService.update(config);
+            // Persist update via BudgetService
+            budgetService.update(found);
 
             System.out.println("Budget updated.");
             this.accountData = AccountDataLoader.loadAccountData();
@@ -713,7 +696,7 @@ public class CliController {
         }
     }
 
-    private void handleUpdateGoal(String accountID, AccountDataLoader.DataHolder accountData) {
+    private void handleUpdateGoal(AccountDataLoader.DataHolder accountData) {
         System.out.println("=== Update Goal ===");
         handleViewGoals(accountData);
         System.out.print("Enter Goal name to update: ");
@@ -783,12 +766,8 @@ public class CliController {
                     return;
             }
 
-            Map<String, Object> config = new HashMap<>();
-            config.put("class", Goal.class);
-            config.put("table", "Goal");
-            config.put("id", id);
-            config.put("updates", updates);
-            GenericSQLiteService.update(config);
+            // Persist update via GoalService
+            goalService.update(found);
 
             System.out.println("Goal updated.");
             this.accountData = AccountDataLoader.loadAccountData();
@@ -799,8 +778,11 @@ public class CliController {
         }
     }
 
-    /* Delete handlers: ask for name, delete row from DB and remove from in-memory list */
-    private void handleDeleteTransaction(String currentAccountID, AccountDataLoader.DataHolder accountData) {
+    /*
+     * Delete handlers: ask for name, delete row from DB and remove from in-memory
+     * list
+     */
+    private void handleDeleteTransaction(AccountDataLoader.DataHolder accountData) {
         System.out.println("=== Delete Transaction ===");
         System.out.println("Available Transactions:");
         handleViewReports(accountData);
@@ -821,27 +803,22 @@ public class CliController {
         }
 
         String transactionId = transactionToDelete.getId();
-        System.out.println("\nConfirming deletion of Transaction: " + transactionToDelete.getName() + 
-                         " (Amount: " + transactionToDelete.getAmount() + ")");
-        
-        Map<String, Object> config = new HashMap<>();
-        config.put("class", Transaction.class);
-        config.put("table", "transaction_records");
-        // transaction_records primary key column is "ID" (uppercase)
-        config.put("pk", "ID");
-        config.put("id", transactionId);
+        System.out.println("\nConfirming deletion of Transaction: " + transactionToDelete.getName() +
+                " (Amount: " + transactionToDelete.getAmount() + ")");
+
         try {
-            GenericSQLiteService.delete(config);
+            // Persist delete via TransactionService
+            transactionService.delete(transactionId);
             accountData.getTransactions().remove(transactionToDelete);
             System.out.println("SUCCESS: Transaction '" + transactionToDelete.getName() + "' has been deleted successfully.");
             // refresh in-memory data to reflect persisted changes
-            refreshDataHolder(accountData, currentAccountID);
+            refreshDataHolder(accountData);
         } catch (Exception ex) {
             System.out.println("ERROR: Failed to delete transaction: " + ex.getMessage());
         }
     }
 
-    private void handleDeleteBudget(String accountID, AccountDataLoader.DataHolder accountData) {
+    private void handleDeleteBudget(AccountDataLoader.DataHolder accountData) {
         System.out.println("=== Delete Budget ===");
         System.out.println("Available Budgets:");
         handleViewBudgets(accountData);
@@ -862,25 +839,22 @@ public class CliController {
         }
 
         String budgetId = budgetToDelete.getId();
-        System.out.println("\nConfirming deletion of Budget: " + budgetToDelete.getName() + 
-                         " (Limit: " + budgetToDelete.getLimitAmount() + ")");
-        
-        Map<String, Object> config = new HashMap<>();
-        config.put("class", Budget.class);
-        config.put("table", "Budget");
-        config.put("id", budgetId);
+        System.out.println("\nConfirming deletion of Budget: " + budgetToDelete.getName() +
+                " (Limit: " + budgetToDelete.getLimitAmount() + ")");
+
         try {
-            GenericSQLiteService.delete(config);
+            // Persist delete via BudgetService
+            budgetService.delete(budgetId);
             accountData.getBudgets().remove(budgetToDelete);
             System.out.println("SUCCESS: Budget '" + budgetToDelete.getName() + "' has been deleted successfully.");
             // refresh in-memory data to reflect persisted changes
-            refreshDataHolder(accountData, accountID);
+            refreshDataHolder(accountData);
         } catch (Exception ex) {
             System.out.println("ERROR: Failed to delete budget: " + ex.getMessage());
         }
     }
 
-    private void handleDeleteGoal(String accountID, AccountDataLoader.DataHolder accountData) {
+    private void handleDeleteGoal(AccountDataLoader.DataHolder accountData) {
         System.out.println("=== Delete Goal ===");
         System.out.println("Available Goals:");
         handleViewGoals(accountData);
@@ -901,19 +875,16 @@ public class CliController {
         }
 
         String goalId = goalToDelete.getId();
-        System.out.println("\nConfirming deletion of Goal: " + goalToDelete.getName() + 
-                         " (Target Amount: " + goalToDelete.getTarget() + ")");
-        
-        Map<String, Object> config = new HashMap<>();
-        config.put("class", Goal.class);
-        config.put("table", "Goal");
-        config.put("id", goalId);
+        System.out.println("\nConfirming deletion of Goal: " + goalToDelete.getName() +
+                " (Target Amount: " + goalToDelete.getTarget() + ")");
+
         try {
-            GenericSQLiteService.delete(config);
+            // Persist delete via GoalService
+            goalService.delete(goalId);
             accountData.getGoals().remove(goalToDelete);
             System.out.println("SUCCESS: Goal '" + goalToDelete.getName() + "' has been deleted successfully.");
             // refresh in-memory data to reflect persisted changes
-            refreshDataHolder(accountData, accountID);
+            refreshDataHolder(accountData);
         } catch (Exception ex) {
             System.out.println("ERROR: Failed to delete goal: " + ex.getMessage());
         }
@@ -922,14 +893,27 @@ public class CliController {
     /**
      * Reloads account data from DB and updates the passed DataHolder in-place.
      */
-    private void refreshDataHolder(AccountDataLoader.DataHolder accountData, String accountID) {
+    private void refreshDataHolder(AccountDataLoader.DataHolder accountData) {
         AccountDataLoader.DataHolder fresh = AccountDataLoader.loadAccountData();
-        if (fresh == null) return;
+        if (fresh == null)
+            return;
 
         accountData.setBudgets(fresh.getBudgets());
         accountData.setGoals(fresh.getGoals());
         accountData.setTransactions(fresh.getTransactions());
         accountData.setWallets(fresh.getWallets());
+    }
+
+    /**
+     * Persistence placeholders - replace with real DB persistence implementation
+     * later.
+     */
+    private void persistUpdate(Map<String, Object> config) throws UnsupportedOperationException {
+        throw new UnsupportedOperationException("persistUpdate not implemented");
+    }
+
+    private void persistDelete(Map<String, Object> config) throws UnsupportedOperationException {
+        throw new UnsupportedOperationException("persistDelete not implemented");
     }
 
     /**
@@ -966,88 +950,9 @@ public class CliController {
         System.out.println("========================================");
         System.out.println("17. View Reports");
         System.out.println("========================================");
-        System.out.println("18. Add Wallet ");
-        System.out.println("19. Update Wallet ");
-        System.out.println("20. Delete Wallet ");
-        System.out.println("========================================");
         System.out.println("0. Exit");
     }
 
-    private void AddWallet() {
-        System.out.println("Add Wallet:");
-        String name="";
-        double balance=0.0;
-        String color="";
-        try{
-        System.out.println("Enter wallet name: ");
-        name = scanner.nextLine().trim();
-        System.out.println("Enter initial balance: ");
-        balance = Double.parseDouble(scanner.nextLine().trim());
-        System.out.println("Add wallet color:");
-        color = scanner.nextLine().trim();
-         } catch (NumberFormatException e) {
-            System.out.println("Invalid input. Please enter a valid number for balance.");
-            return;
-        }
-        Wallet wallet = new Wallet(name, balance, color);
-        walletService.create(wallet);
-    }
-
-    private void UpdateWallet() {
-        System.out.println("Update Wallet:");
-        List<Wallet> wallets = walletService.readAll();
-        handleAccountSummary();
-        Wallet selectedWallet = null;
-        String walletId = null;
-        while (walletId == null) {
-            System.out.print("Enter the number of the account: ");
-            String input = scanner.nextLine().trim();
-            try {
-                int num = Integer.parseInt(input);
-                if (num >= 1 && num <= wallets.size()) {
-                    walletId = wallets.get(num - 1).getId();
-                    selectedWallet = walletService.read(walletId);
-                } else {
-                    System.out.println("Invalid number. Try again.");
-                }
-        System.out.println("Enter new wallet name (current: " + selectedWallet.getName() + "): ");
-        String name = scanner.nextLine().trim();
-        System.out.println("Enter new balance (current: " + selectedWallet.getBalance() + "): ");
-        double balance = Double.parseDouble(scanner.nextLine().trim());
-        System.out.println("Enter new color (current: " + selectedWallet.getColor() + "): ");
-        String color = scanner.nextLine().trim();
-        selectedWallet.setName(name);
-        selectedWallet.setBalance(balance);
-        selectedWallet.setColor(color);
-        walletService.update(selectedWallet);
-            } catch (NumberFormatException e) {
-                System.out.println("Please enter a valid number.");
-            }
-        }
-
-    }
-    public void DeleteWallet() {
-        System.out.println("Delete Wallet:");
-        List<Wallet> wallets = walletService.readAll();
-        handleAccountSummary();
-        String walletId = null;
-        while (walletId == null) {
-            System.out.print("Enter the number of the account: ");
-            String input = scanner.nextLine().trim();
-            try {
-                int num = Integer.parseInt(input);
-                if (num >= 1 && num <= wallets.size()) {
-                    walletId = wallets.get(num - 1).getId();
-                    walletService.delete(walletId);
-                    System.out.println("Wallet deleted: " + wallets.get(num - 1).getName());
-                } else {
-                    System.out.println("Invalid number. Try again.");
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("Please enter a valid number.");
-            }
-        }
-    }
     /**
      * Handle Add Budget menu option
      */
@@ -1076,14 +981,14 @@ public class CliController {
         String endDate = scanner.nextLine().trim();
 
         System.out.print("Enter tracked categories (comma-separated): ");
-        scanner.nextLine(); // read and ignore tracked categories (junction table used elsewhere)
+        String tracked = scanner.nextLine().trim();
 
         Budget budget = new Budget(name, limits, balance, startDate, endDate);
-        
+
         // Save to database using BudgetService
         budgetService.create(budget);
         System.out.println("Budget created: " + budget.getName());
-        
+
         // Refresh account data after creating budget
         this.accountData = AccountDataLoader.loadAccountData();
     }
@@ -1118,11 +1023,11 @@ public class CliController {
         }
 
         Goal goal = new Goal(name, target, current, deadline, priority, createAt);
-        
+
         // Save to database using GoalService
         goalService.create(goal);
         System.out.println("Goal created: " + goal.getName());
-        
+
         // Refresh account data after creating goal
         this.accountData = AccountDataLoader.loadAccountData();
     }
