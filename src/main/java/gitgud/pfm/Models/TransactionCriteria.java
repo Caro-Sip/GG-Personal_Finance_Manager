@@ -10,7 +10,7 @@ public class TransactionCriteria {
     private String walletId;
     private String dateFrom;
     private String dateTo;
-    private boolean income;
+    private Boolean income;
 
     public TransactionCriteria() {
     }
@@ -51,8 +51,11 @@ public class TransactionCriteria {
                (walletId != null && !walletId.isEmpty()) ||
                (dateFrom != null && !dateFrom.isEmpty()) ||
                (dateTo != null && !dateTo.isEmpty()) ||
-               income !=null;
+               income != null;
     }
+
+    public Boolean getIncome() { return income; }
+    public void setIncome(Boolean income) { this.income = income; }
 
     public static class Builder {
         private final TransactionCriteria criteria = new TransactionCriteria();
@@ -82,7 +85,7 @@ public class TransactionCriteria {
             return this;
         }
         public Builder income(boolean income) {
-            criteria.income = income;
+            criteria.income = Boolean.valueOf(income);
             return this;
         }
         public Builder dateFrom(String dateFrom) {

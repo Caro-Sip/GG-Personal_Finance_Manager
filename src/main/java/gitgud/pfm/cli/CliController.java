@@ -445,18 +445,14 @@ public class CliController {
      */
     private void handleViewBudgets(AccountDataLoader.DataHolder accountData) {
         System.out.println("=== View Budgets ===");
-        System.out.printf("%-20s %10s %10s %-12s %-12s %-20s%n", "Name", "Limits", "Balance", "Start", "End",
-                "Tracked Categories");
+        System.out.printf("%-20s %10s %10s %-12s %-12s%n", "Name", "Limits", "Balance", "Start", "End");
         for (Budget b : accountData.getBudgets()) {
-            System.out.printf("%-20s %10.2f %10.2f %-12s %-12s %-20s%n",
+                System.out.printf("%-20s %10.2f %10.2f %-12s %-12s%n",
                     b.getName(),
                     b.getLimitAmount(),
                     b.getBalance(),
                     b.getStartDate(),
-                    b.getEndDate()// ,
-            // TODO fix tracked categories display due to the new junction table
-            // b.getTrackedCategories()
-            );
+                    b.getEndDate());
         }
     }
 
