@@ -201,4 +201,9 @@ public class DataStore {
             System.err.println("Error deleting budget: " + e.getMessage());
         }
     }
+    
+    // ============== Category Methods ==============
+    public CategoryService getCategoryService() {
+        return categoryService;
+    }
 }

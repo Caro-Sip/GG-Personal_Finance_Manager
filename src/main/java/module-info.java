@@ -9,8 +9,10 @@ module gitgud.pfm {
     opens gitgud.pfm.Controllers to javafx.fxml;
     opens gitgud.pfm.GUI to javafx.fxml;
     opens gitgud.pfm.GUI.data to javafx.fxml;
+    opens gitgud.pfm.Models to javafx.base;
     
     exports gitgud.pfm;
     exports gitgud.pfm.GUI;
     exports gitgud.pfm.GUI.data;
+    exports gitgud.pfm.Controllers;
 }

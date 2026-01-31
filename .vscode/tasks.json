@@ -30,14 +30,15 @@
 			"problemMatcher": []
 		},
 		{
-			"label": "Run FinanceAppcopy GUI",
-			"type": "shell",
-			"command": "mvn",
-			"args": [
-				"javafx:run",
-				"-Djavafx.mainClass=gitgud.pfm.FinanceAppcopy.FinanceApp"
+			"type": "java (build)",
+			"paths": [
+				"${workspace}"
 			],
-			"group": "build"
+			"isFullBuild": true,
+			"group": "build",
+			"problemMatcher": [],
+			"label": "java (build): Build Workspace",
+			"detail": "$(tools) Build all the Java projects in workspace."
 		}
 	]
 }
