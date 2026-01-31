@@ -1,6 +1,7 @@
 package gitgud.pfm.services;
 
 import gitgud.pfm.Models.Budget;
+import gitgud.pfm.Models.Category;
 import gitgud.pfm.interfaces.CRUDInterface;
 import java.sql.*;
 import java.util.ArrayList;
@@ -164,4 +165,180 @@ public class BudgetService implements CRUDInterface<Budget> {
         }
         return budgets;
     }
+
+    /**
+     * Get all categories associated with a specific budget
+     * Explicit fields: c.id, c.name, c.description (via Budget_Category junction)
+     */
+    public List<Category> getCategoriesForBudget(String budgetId) {
+        String sql = "SELECT DISTINCT c.id, c.name, c.description " +
+                     "FROM Category c " +
+                     "INNER JOIN Budget_Category bc ON c.id = bc.categoryID " +
+                     "WHERE bc.budgetID = ? " +
+                     "ORDER BY c.name";
+        List<Category> categories = new ArrayList<>();
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, budgetId);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    Category category = new Category();
+                    category.setId(rs.getString("id"));
+                    category.setName(rs.getString("name"));
+                    category.setDescription(rs.getString("description"));
+                    categories.add(category);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting categories for budget: " + e.getMessage());
+        }
+        return categories;
+    }
+
+    /**
+     * Get all budgets associated with a specific category
+     * Explicit fields: b.id, b.name, b.limitAmount, b.balance, b.startDate, b.endDate (via Budget_Category junction)
+     */
+    public List<Budget> getBudgetsForCategory(String categoryId) {
+        String sql = "SELECT DISTINCT b.id, b.name, b.limitAmount, b.balance, b.startDate, b.endDate " +
+                     "FROM Budget b " +
+                     "INNER JOIN Budget_Category bc ON b.id = bc.budgetID " +
+                     "WHERE bc.categoryID = ? " +
+                     "ORDER BY b.name";
+        List<Budget> budgets = new ArrayList<>();
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, categoryId);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    Budget budget = new Budget();
+                    budget.setId(rs.getString("id"));
+                    budget.setName(rs.getString("name"));
+                    budget.setLimitAmount(rs.getDouble("limitAmount"));
+                    budget.setBalance(rs.getDouble("balance"));
+                    budget.setStartDate(rs.getString("startDate"));
+                    budget.setEndDate(rs.getString("endDate"));
+                    budgets.add(budget);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting budgets for category: " + e.getMessage());
+        }
+        return budgets;
+    }
+
+    /**
+     * Check if a category is linked to a budget
+     * Returns true if the relationship exists in Budget_Category junction table
+     */
+    public boolean isCategoryInBudget(String budgetId, String categoryId) {
+        String sql = "SELECT COUNT(*) FROM Budget_Category " +
+                     "WHERE budgetID = ? AND categoryID = ?";
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, budgetId);
+            pstmt.setString(2, categoryId);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error checking category in budget: " + e.getMessage());
+        }
+        return false;
+    }
+
+    /**
+     * Add a category to a budget (INSERT into Budget_Category junction table)
+     * Handles duplicate key errors gracefully
+     */
+    public void addCategoryToBudget(String budgetId, String categoryId) {
+        String sql = "INSERT INTO Budget_Category (budgetID, categoryID) VALUES (?, ?)";
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, budgetId);
+            pstmt.setString(2, categoryId);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            if (e.getMessage().contains("UNIQUE") || e.getMessage().contains("PRIMARY KEY")) {
+                System.out.println("Category already linked to budget.");
+            } else {
+                System.err.println("Error adding category to budget: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Remove a category from a budget (DELETE from Budget_Category junction table)
+     */
+    public void removeCategoryFromBudget(String budgetId, String categoryId) {
+        String sql = "DELETE FROM Budget_Category WHERE budgetID = ? AND categoryID = ?";
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, budgetId);
+            pstmt.setString(2, categoryId);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Error removing category from budget: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Replace all categories for a budget
+     * Removes all existing category links and adds new ones (transactional)
+     */
+    public void setCategoriesForBudget(String budgetId, List<String> categoryIds) {
+        try {
+            connection.setAutoCommit(false);
+            
+            // Step 1: Delete all existing category links
+            String deleteSql = "DELETE FROM Budget_Category WHERE budgetID = ?";
+            try (PreparedStatement deleteStmt = connection.prepareStatement(deleteSql)) {
+                deleteStmt.setString(1, budgetId);
+                deleteStmt.executeUpdate();
+            }
+            
+            // Step 2: Insert new category links
+            String insertSql = "INSERT INTO Budget_Category (budgetID, categoryID) VALUES (?, ?)";
+            try (PreparedStatement insertStmt = connection.prepareStatement(insertSql)) {
+                for (String categoryId : categoryIds) {
+                    insertStmt.setString(1, budgetId);
+                    insertStmt.setString(2, categoryId);
+                    insertStmt.addBatch();
+                }
+                insertStmt.executeBatch();
+            }
+            
+            connection.commit();
+            connection.setAutoCommit(true);
+        } catch (SQLException e) {
+            try {
+                connection.rollback();
+                connection.setAutoCommit(true);
+            } catch (SQLException rollbackEx) {
+                System.err.println("Error during rollback: " + rollbackEx.getMessage());
+            }
+            System.err.println("Error setting categories for budget: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Remove all category links for a budget
+     * Useful when deleting or resetting a budget's categories
+     */
+    public void removeAllCategoriesFromBudget(String budgetId) {
+        String sql = "DELETE FROM Budget_Category WHERE budgetID = ?";
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, budgetId);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Error removing all categories from budget: " + e.getMessage());
+        }
+    }
 }
+                
