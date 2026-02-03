@@ -1,12 +1,12 @@
 package gitgud.pfm.Models;
-
+import java.util.List;
 
 public class TransactionCriteria {
      private String transactionId;
 
     private Double minAmount;
     private Double maxAmount;
-    private String categoryId;
+    private List<String> categoryId;
     private String walletId;
     private String dateFrom;
     private String dateTo;
@@ -28,8 +28,8 @@ public class TransactionCriteria {
     public Double getMaxAmount() { return maxAmount; }
     public void setMaxAmount(Double maxAmount) { this.maxAmount = maxAmount; }
 
-    public String getCategoryId() { return categoryId; }
-    public void setCategoryId(String categoryId) { this.categoryId = categoryId; }
+    public List<String> getCategoryId() { return categoryId; }
+    public void setCategoryId(List<String> categoryId) { this.categoryId = categoryId; }
 
     public String getWalletId() { return walletId; }
     public void setWalletId(String walletId) { this.walletId = walletId; }
@@ -76,7 +76,7 @@ public class TransactionCriteria {
             return this;
         }
 
-        public Builder categoryId(String categoryId) {
+        public Builder categoryId(List<String> categoryId) {
             criteria.setCategoryId(categoryId);
             return this;
         }
