@@ -137,10 +137,6 @@ public class BudgetService implements CRUDInterface<Budget> {
             System.err.println("Error deleting budget: " + e.getMessage());
         }
     }
-    
-    /**
-     * Get budgets that are currently active (current date within startDate and endDate)
-     */
     public List<Budget> getActiveBudgets() {
         String sql = "SELECT id, name, limitAmount, balance, startDate, endDate, " +
                  "(julianday(endDate) - julianday('now')) AS days_left " +
@@ -195,9 +191,7 @@ public class BudgetService implements CRUDInterface<Budget> {
         return budgets;
     }
     
-    /**
-     * Get all budgets ordered: active budgets first, then inactive budgets
-     */
+    
     public List<Budget> getAllBudgetsOrdered() {
         List<Budget> result = new ArrayList<>();
         result.addAll(getActiveBudgets());
@@ -209,6 +203,7 @@ public class BudgetService implements CRUDInterface<Budget> {
 		List<Budget> budgets = new ArrayList<>();
 		String sql = "SELECT * FROM Budget WHERE name LIKE ? ORDER BY name";
 		try (PreparedStatement pstmt = connection.prepareStatement(sql)){
+            pstmt.setString(1, namePattern);
             try (ResultSet rs = pstmt.executeQuery()) {
 			while (rs.next()) {
 				Budget budget = new Budget();
