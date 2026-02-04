@@ -53,8 +53,8 @@ public class GoalService implements CRUDInterface<Goal> {
      */
     @Override
     public Goal read(String id) {
-        String sql = "SELECT id, name, target, deadline, priority, createAt " +
-                "FROM Goal WHERE id = ?";
+        String sql = "SELECT id, name, target, balance, deadline, priority, createAt, walletId " +
+            "FROM Goal WHERE id = ?";
 
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, id);
@@ -69,9 +69,11 @@ public class GoalService implements CRUDInterface<Goal> {
                     goal.setPriority(rs.getDouble("priority"));
                     goal.setCreateTime(rs.getString("createAt"));
 
-                    // Compute balance from transactions (read-only)
-                    double computedBalance = computeGoalProgress(goal.getId());
-                    goal.setBalance(computedBalance); // This will be ignored by the overridden setter
+                    goal.setBalance(rs.getDouble("balance"));
+                    goal.setWalletId(rs.getString("walletId"));
+                    // Computed fields unavailable without transaction.goalId link
+                    goal.setTxCount(0);
+                    goal.setProgress(0.0);
 
                     return goal;
                 }
@@ -88,8 +90,8 @@ public class GoalService implements CRUDInterface<Goal> {
      * NOTE: balance is computed for each goal from transactions
      */
     public List<Goal> readAll() {
-        String sql = "SELECT id, name, target, deadline, priority, createAt " +
-                "FROM Goal ORDER BY priority DESC, deadline";
+        String sql = "SELECT id, name, target, balance, deadline, priority, createAt, walletId " +
+            "FROM Goal ORDER BY priority DESC, deadline";
         List<Goal> goals = new ArrayList<>();
 
         try (PreparedStatement pstmt = connection.prepareStatement(sql);
@@ -104,9 +106,11 @@ public class GoalService implements CRUDInterface<Goal> {
                 goal.setPriority(rs.getDouble("priority"));
                 goal.setCreateTime(rs.getString("createAt"));
 
-                // Compute balance from transactions (read-only)
-                double computedBalance = computeGoalProgress(goal.getId());
-                goal.setBalance(computedBalance);
+                goal.setBalance(rs.getDouble("balance"));
+                goal.setWalletId(rs.getString("walletId"));
+                // Computed fields unavailable without transaction.goalId link
+                goal.setTxCount(0);
+                goal.setProgress(0.0);
 
                 goals.add(goal);
             }
@@ -122,17 +126,18 @@ public class GoalService implements CRUDInterface<Goal> {
      * NOTE: balance is NEVER updated - it's always computed from transactions
      */
     @Override
-    public void update(Goal goal) {
-        String sql = "UPDATE Goal SET name = ?, target = ?, deadline = ?, " +
+     public void update(Goal goal) {
+        String sql = "UPDATE Goal SET name = ?, target = ?, balance = ?, deadline = ?, " +
                 "priority = ?, createAt = ? WHERE id = ?";
 
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, goal.getName());
             pstmt.setDouble(2, goal.getTarget());
-            pstmt.setString(3, goal.getDeadline());
-            pstmt.setDouble(4, goal.getPriority());
-            pstmt.setString(5, goal.getCreateTime());
-            pstmt.setString(6, goal.getId());
+            pstmt.setDouble(3, goal.getBalance());  // ← ADDED THIS
+            pstmt.setString(4, goal.getDeadline());
+            pstmt.setDouble(5, goal.getPriority());
+            pstmt.setString(6, goal.getCreateTime());
+            pstmt.setString(7, goal.getId());
 
             pstmt.executeUpdate();
         } catch (SQLException e) {
@@ -178,21 +183,8 @@ public class GoalService implements CRUDInterface<Goal> {
      * @return The sum of all transaction amounts allocated to this goal
      */
     public double computeGoalProgress(String goalId) {
-        String sql = "SELECT SUM(amount) as total FROM transaction_records WHERE goalId = ?";
-
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, goalId);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    double total = rs.getDouble("total");
-                    // Handle NULL case (no transactions linked to this goal)
-                    return rs.wasNull() ? 0.0 : total;
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Error computing goal progress: " + e.getMessage());
-        }
+        // Schema does not include a goalId column on transactions; cannot compute
+        // progress from DB
         return 0.0;
     }
 
@@ -268,8 +260,8 @@ public class GoalService implements CRUDInterface<Goal> {
      */
     public List<Goal> findByName(String namePattern) {
         List<Goal> goals = new ArrayList<>();
-        String sql = "SELECT id, name, target, deadline, priority, createAt " +
-                "FROM Goal WHERE name LIKE ? ORDER BY name";
+        String sql = "SELECT id, name, target, balance, deadline, priority, createAt, walletId " +
+            "FROM Goal WHERE name LIKE ? ORDER BY name";
 
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, namePattern);
@@ -284,9 +276,10 @@ public class GoalService implements CRUDInterface<Goal> {
                     goal.setPriority(rs.getDouble("priority"));
                     goal.setCreateTime(rs.getString("createAt"));
 
-                    // Compute balance from transactions
-                    double computedBalance = computeGoalProgress(goal.getId());
-                    goal.setBalance(computedBalance);
+                    goal.setBalance(rs.getDouble("balance"));
+                    goal.setWalletId(rs.getString("walletId"));
+                    goal.setTxCount(0);
+                    goal.setProgress(0.0);
 
                     goals.add(goal);
                 }
@@ -308,19 +301,7 @@ public class GoalService implements CRUDInterface<Goal> {
      * @return Number of transactions linked to this goal
      */
     public int getTransactionCount(String goalId) {
-        String sql = "SELECT COUNT(*) as count FROM transaction_records WHERE goalId = ?";
-
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, goalId);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("count");
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Error counting transactions for goal: " + e.getMessage());
-        }
+        // No goalId column in current schema; cannot count allocated transactions in DB
         return 0;
     }
 

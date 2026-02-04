@@ -7,6 +7,10 @@ public class Goal extends FinancialEntity {
     private double priority;
     private String createTime;
     private String deadline;
+    private String walletId;
+    // Computed fields (populated by GoalService queries)
+    private int txCount;
+    private double progress;
     
     // No-arg constructor required for reflection-based mapping (do not auto-persist)
     public Goal() {
@@ -21,6 +25,15 @@ public class Goal extends FinancialEntity {
         this.priority = priority;
         this.createTime = createTime;
     }
+
+    public String getWalletId() { return walletId; }
+    public void setWalletId(String walletId) { this.walletId = walletId; }
+
+    public int getTxCount() { return txCount; }
+    public void setTxCount(int txCount) { this.txCount = txCount; }
+
+    public double getProgress() { return progress; }
+    public void setProgress(double progress) { this.progress = progress; }
 
     /**
      * New constructor used by CLI: do not require current balance (computed from transactions)

@@ -24,8 +24,8 @@ public class TransactionService implements CRUDInterface<Transaction> {
     @Override
     public void create(Transaction transaction) {
         String sql = "INSERT INTO transaction_records (id, categoryId, amount, name, income, walletId, createTime) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?)";
-        
+                 "VALUES (?, ?, ?, ?, ?, ?, ?)";
+
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, transaction.getId());
             pstmt.setString(2, transaction.getCategoryId());
@@ -48,8 +48,7 @@ public class TransactionService implements CRUDInterface<Transaction> {
     @Override
     public Transaction read(String id) {
         String sql = "SELECT id, categoryId, amount, name, income, walletId, createTime " +
-                     "FROM transaction_records WHERE id = ?";
-        
+                 "FROM transaction_records WHERE id = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, id);
             
@@ -78,9 +77,8 @@ public class TransactionService implements CRUDInterface<Transaction> {
      */
     public List<Transaction> readAll() {
         String sql = "SELECT id, categoryId, amount, name, income, walletId, createTime " +
-                     "FROM transaction_records ORDER BY createTime DESC";
+             "FROM transaction_records ORDER BY createTime DESC";
         List<Transaction> transactions = new ArrayList<>();
-        
         try (PreparedStatement pstmt = connection.prepareStatement(sql);
              ResultSet rs = pstmt.executeQuery()) {
             
@@ -107,9 +105,8 @@ public class TransactionService implements CRUDInterface<Transaction> {
      */
     public List<Transaction> readByAccount(String accountID) {
         String sql = "SELECT id, categoryId, amount, name, income, walletId, createTime " +
-                     "FROM transaction_records WHERE walletId = ? ORDER BY createTime DESC";
+                 "FROM transaction_records WHERE walletId = ? ORDER BY createTime DESC";
         List<Transaction> transactions = new ArrayList<>();
-        
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, accountID);
             
@@ -139,8 +136,7 @@ public class TransactionService implements CRUDInterface<Transaction> {
     @Override
     public void update(Transaction transaction) {
         String sql = "UPDATE transaction_records SET categoryId = ?, amount = ?, name = ?, " +
-                     "income = ?, walletId = ?, createTime = ? WHERE id = ?";
-        
+             "income = ?, walletId = ?, createTime = ? WHERE id = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, transaction.getCategoryId());
             pstmt.setDouble(2, transaction.getAmount());
@@ -209,11 +205,12 @@ public class TransactionService implements CRUDInterface<Transaction> {
     }
     public List<Transaction> findByName(String namePattern) {
 		List<Transaction> transactions = new ArrayList<>();
-		String sql = "SELECT * FROM transaction_records WHERE name LIKE ? ORDER BY name";
-		try (PreparedStatement pstmt = connection.prepareStatement(sql)){
+        String sql = "SELECT id, categoryId, amount, name, income, walletId, createTime FROM transaction_records WHERE name LIKE ? ORDER BY name";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)){
+            pstmt.setString(1, namePattern);
             try (ResultSet rs = pstmt.executeQuery()) {
-			while (rs.next()) {
-				Transaction transaction = new Transaction();
+            while (rs.next()) {
+                Transaction transaction = new Transaction();
                     transaction.setId(rs.getString("id"));
                     transaction.setCategoryId(rs.getString("categoryId"));
                     transaction.setAmount(rs.getDouble("amount"));
@@ -222,11 +219,11 @@ public class TransactionService implements CRUDInterface<Transaction> {
                     transaction.setWalletId(rs.getString("walletId"));
                     transaction.setCreateTime(rs.getString("createTime"));
                     transactions.add(transaction);
-			}
+            }
         }
-		} catch (SQLException e) {
-			System.out.println("Error searching transactions by name: " + e.getMessage());
-		}
-		return transactions;
-	}
+        } catch (SQLException e) {
+            System.out.println("Error searching transactions by name: " + e.getMessage());
+        }
+        return transactions;
+    }
 }
