@@ -3,12 +3,6 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<<<<<<< HEAD
-
-<BorderPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"
-            fx:controller="gitgud.pfm.Controllers.TransactionController"
-=======
 <?import javafx.collections.FXCollections?>
 <?import java.lang.String?>
 
@@ -16,16 +10,12 @@
             xmlns="http://javafx.com/javafx/21"
             fx:controller="gitgud.pfm.Controllers.TransactionsController"
             fx:id="rootPane"
->>>>>>> 119913d (in the middle of translating fxml)
             style="-fx-background-color: #f0f2f5;">
     <padding>
         <Insets top="28" right="28" bottom="28" left="28"/>
     </padding>
     
-<<<<<<< HEAD
-=======
     <!-- Header -->
->>>>>>> 119913d (in the middle of translating fxml)
     <top>
         <HBox spacing="20" alignment="CENTER_LEFT">
             <padding>
@@ -33,44 +23,18 @@
             </padding>
             <Label text="All Transactions" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #1e293b;"/>
             <Region HBox.hgrow="ALWAYS"/>
-<<<<<<< HEAD
-            <Label fx:id="balanceLabel" text="Balance: $0.00"
-                   style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #10b981;"/>
-            <Button fx:id="addButton" text="+ Add Transaction"
-                    onAction="#handleAddTransaction"
-=======
             <Button fx:id="addTransactionButton" text="Add Transaction"
->>>>>>> 119913d (in the middle of translating fxml)
                     style="-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: 600; -fx-padding: 12 24; -fx-background-radius: 8; -fx-cursor: hand;"/>
         </HBox>
     </top>
     
-<<<<<<< HEAD
-=======
     <!-- Main Content -->
->>>>>>> 119913d (in the middle of translating fxml)
     <center>
         <VBox spacing="16" style="-fx-background-color: white; -fx-background-radius: 16; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 3, 0, 0, 1);">
             <padding>
                 <Insets top="24" right="24" bottom="24" left="24"/>
             </padding>
             
-<<<<<<< HEAD
-            <TableView fx:id="transactionTable" VBox.vgrow="ALWAYS" style="-fx-background-color: transparent;">
-                <columns>
-                    <TableColumn fx:id="dateColumn" text="Date" prefWidth="150"/>
-                    <TableColumn fx:id="nameColumn" text="Description" prefWidth="200"/>
-                    <TableColumn fx:id="categoryColumn" text="Category" prefWidth="150"/>
-                    <TableColumn fx:id="accountColumn" text="Account" prefWidth="150"/>
-                    <TableColumn fx:id="typeColumn" text="Type" prefWidth="100"/>
-                    <TableColumn fx:id="amountColumn" text="Amount" prefWidth="120"/>
-                    <TableColumn fx:id="actionsColumn" text="Actions" prefWidth="150"/>
-                </columns>
-                <columnResizePolicy>
-                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
-                </columnResizePolicy>
-            </TableView>
-=======
             <!-- Filters Section -->
             <HBox spacing="16" alignment="CENTER_LEFT">
                 <Label text="Filter by:" style="-fx-font-size: 14px; -fx-text-fill: #64748b;"/>
@@ -138,7 +102,6 @@
                 </Label>
                 <Button fx:id="nextPageButton" text="Next" style="-fx-background-color: #f1f5f9; -fx-text-fill: #64748b; -fx-padding: 8 16; -fx-background-radius: 6;"/>
             </HBox>
->>>>>>> 119913d (in the middle of translating fxml)
         </VBox>
     </center>
 </BorderPane>
