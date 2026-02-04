@@ -190,6 +190,7 @@ public class AddTransactionFormController implements Initializable {
             double newBalance = wallet.getBalance() + (selectedCategoryType == Category.Type.INCOME ? amount : -amount);
             wallet.setBalance(newBalance);
             dataStore.updateWallet(wallet);
+            dataStore.notifyWalletRefresh(); // Notify sidebar to update wallet display
         }
         
         dataStore.addTransaction(transaction);
