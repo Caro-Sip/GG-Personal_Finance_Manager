@@ -6,12 +6,16 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.chart.*;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 
 import java.net.URL;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.ResourceBundle;
@@ -31,32 +35,33 @@ public class ReportsController implements Initializable {
     @FXML private Label expenseChangeLabel;
     @FXML private Label savingsChangeLabel;
     @FXML private Label rateChangeLabel;
-    @FXML private LineChart<String, Number> incomeExpenseChart;
-    @FXML private PieChart expensePieChart;
+    @FXML private VBox incomeExpenseChartContainer;
+    @FXML private VBox expensePieChartContainer;
     @FXML private BarChart<String, Number> monthlyTrendsChart;
     @FXML private VBox categoryBreakdownList;
 
     private DataStore dataStore;
+    private boolean showingIncome = false;
+    private boolean showPercentage = false;
+    private LineChart<Number, Number> dailyChart;
+    private PieChart expensePieChart;
     
-    // Category ID to Name mapping
     private static final Map<String, String> CATEGORY_NAMES = new LinkedHashMap<>();
     private static final Map<String, String> CATEGORY_ICONS = new LinkedHashMap<>();
     private static final Map<String, String> CATEGORY_COLORS = new LinkedHashMap<>();
     
     static {
-        // Expense categories
         CATEGORY_NAMES.put("1", "Food & Drinks");
         CATEGORY_NAMES.put("2", "Transport");
         CATEGORY_NAMES.put("3", "Home Bills");
         CATEGORY_NAMES.put("4", "Self-care");
         CATEGORY_NAMES.put("5", "Shopping");
         CATEGORY_NAMES.put("6", "Health");
-        CATEGORY_NAMES.put("9", "Subscription");
-        CATEGORY_NAMES.put("10", "Entertainment");
-        CATEGORY_NAMES.put("11", "Traveling");
-        // Income categories
-        CATEGORY_NAMES.put("7", "Salary");
-        CATEGORY_NAMES.put("8", "Investment");
+        CATEGORY_NAMES.put("7", "Subscription");
+        CATEGORY_NAMES.put("8", "Entertainment & Sport");
+        CATEGORY_NAMES.put("9", "Traveling");
+        CATEGORY_NAMES.put("10", "Salary");
+        CATEGORY_NAMES.put("11", "Investment");
         
         CATEGORY_ICONS.put("1", "🍔");
         CATEGORY_ICONS.put("2", "🚗");
@@ -64,11 +69,11 @@ public class ReportsController implements Initializable {
         CATEGORY_ICONS.put("4", "💆");
         CATEGORY_ICONS.put("5", "🛒");
         CATEGORY_ICONS.put("6", "💊");
-        CATEGORY_ICONS.put("9", "📱");
-        CATEGORY_ICONS.put("10", "🎮");
-        CATEGORY_ICONS.put("11", "✈️");
-        CATEGORY_ICONS.put("7", "💰");
-        CATEGORY_ICONS.put("8", "📈");
+        CATEGORY_ICONS.put("7", "📱");
+        CATEGORY_ICONS.put("8", "🎮");
+        CATEGORY_ICONS.put("9", "✈️");
+        CATEGORY_ICONS.put("10", "💰");
+        CATEGORY_ICONS.put("11", "📈");
         
         CATEGORY_COLORS.put("1", "#ef4444");
         CATEGORY_COLORS.put("2", "#f97316");
@@ -76,16 +81,17 @@ public class ReportsController implements Initializable {
         CATEGORY_COLORS.put("4", "#84cc16");
         CATEGORY_COLORS.put("5", "#22c55e");
         CATEGORY_COLORS.put("6", "#14b8a6");
-        CATEGORY_COLORS.put("9", "#06b6d4");
-        CATEGORY_COLORS.put("10", "#3b82f6");
-        CATEGORY_COLORS.put("11", "#8b5cf6");
-        CATEGORY_COLORS.put("7", "#10b981");
-        CATEGORY_COLORS.put("8", "#6366f1");
+        CATEGORY_COLORS.put("7", "#06b6d4");
+        CATEGORY_COLORS.put("8", "#3b82f6");
+        CATEGORY_COLORS.put("9", "#8b5cf6");
+        CATEGORY_COLORS.put("10", "#10b981");
+        CATEGORY_COLORS.put("11", "#6366f1");
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         dataStore = DataStore.getInstance();
+        dataStore.addWalletRefreshListener(this::refresh);
         
         if (reportPeriodCombo != null) {
             reportPeriodCombo.setOnAction(e -> loadReportData());
@@ -117,7 +123,6 @@ public class ReportsController implements Initializable {
         netSavingsLabel.setText(String.format("$%.2f", netSavings));
         savingsRateLabel.setText(String.format("%.1f%%", savingsRate));
 
-        // Placeholder change labels
         incomeChangeLabel.setText("+0% from last period");
         expenseChangeLabel.setText("+0% from last period");
         savingsChangeLabel.setText("+0% from last period");
@@ -125,177 +130,356 @@ public class ReportsController implements Initializable {
     }
 
     private void loadIncomeExpenseChart() {
-        incomeExpenseChart.getData().clear();
+        incomeExpenseChartContainer.getChildren().clear();
+        
+        HBox toggleBox = new HBox(8);
+        toggleBox.setAlignment(Pos.CENTER_LEFT);
+        
+        ToggleGroup chartToggle = new ToggleGroup();
+        
+        ToggleButton expenseBtn = new ToggleButton("Expenses");
+        expenseBtn.setToggleGroup(chartToggle);
+        expenseBtn.setSelected(!showingIncome);
+        expenseBtn.setStyle(getToggleStyle(!showingIncome));
+        
+        ToggleButton incomeBtn = new ToggleButton("Income");
+        incomeBtn.setToggleGroup(chartToggle);
+        incomeBtn.setSelected(showingIncome);
+        incomeBtn.setStyle(getToggleStyle(showingIncome));
+        
+        expenseBtn.setOnAction(e -> {
+            showingIncome = false;
+            expenseBtn.setStyle(getToggleStyle(true));
+            incomeBtn.setStyle(getToggleStyle(false));
+            updateDailyChart();
+        });
+        
+        incomeBtn.setOnAction(e -> {
+            showingIncome = true;
+            incomeBtn.setStyle(getToggleStyle(true));
+            expenseBtn.setStyle(getToggleStyle(false));
+            updateDailyChart();
+        });
+        
+        toggleBox.getChildren().addAll(expenseBtn, incomeBtn);
+        
+        NumberAxis xAxis = new NumberAxis(1, 31, 1);
+        xAxis.setLabel("Day of Month");
+        xAxis.setMinorTickVisible(false);
+        xAxis.setTickLabelFormatter(new javafx.util.StringConverter<Number>() {
+            @Override
+            public String toString(Number object) {
+                return String.valueOf(object.intValue());
+            }
+            @Override
+            public Number fromString(String string) {
+                return Integer.parseInt(string);
+            }
+        });
+        
+        NumberAxis yAxis = new NumberAxis();
+        yAxis.setLabel("Amount ($)");
+        yAxis.setMinorTickVisible(false);
+        
+        dailyChart = new LineChart<>(xAxis, yAxis);
+        dailyChart.setPrefHeight(280);
+        dailyChart.setLegendVisible(true);
+        dailyChart.setAnimated(false);
+        dailyChart.setCreateSymbols(true);
+        dailyChart.setHorizontalGridLinesVisible(true);
+        dailyChart.setVerticalGridLinesVisible(true);
+        dailyChart.setStyle("-fx-background-color: transparent;");
+        
+        updateDailyChart();
+        
+        incomeExpenseChartContainer.getChildren().addAll(toggleBox, dailyChart);
+        VBox.setMargin(toggleBox, new Insets(0, 0, 16, 0));
+    }
+    
+    private String getToggleStyle(boolean selected) {
+        if (selected) {
+            return "-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 8 16; -fx-font-size: 13px; -fx-font-weight: 600;";
+        }
+        return "-fx-background-color: #f1f5f9; -fx-text-fill: #64748b; -fx-background-radius: 6; -fx-padding: 8 16; -fx-font-size: 13px;";
+    }
+    
+    private void updateDailyChart() {
+        dailyChart.getData().clear();
         
         List<Transaction> transactions = dataStore.getTransactions();
+        YearMonth currentMonth = YearMonth.now();
+        YearMonth lastMonth = currentMonth.minusMonths(1);
+        int daysInCurrentMonth = currentMonth.lengthOfMonth();
+        int daysInLastMonth = lastMonth.lengthOfMonth();
         
-        // Group transactions by week
-        Map<String, Double> weeklyIncome = new LinkedHashMap<>();
-        Map<String, Double> weeklyExpenses = new LinkedHashMap<>();
+        NumberAxis xAxis = (NumberAxis) dailyChart.getXAxis();
+        xAxis.setUpperBound(daysInCurrentMonth);
         
-        // Initialize last 4 weeks
-        LocalDate now = LocalDate.now();
-        for (int i = 3; i >= 0; i--) {
-            String weekLabel = "Week " + (4 - i);
-            weeklyIncome.put(weekLabel, 0.0);
-            weeklyExpenses.put(weekLabel, 0.0);
+        Map<Integer, Double> thisMonthData = new TreeMap<>();
+        Map<Integer, Double> lastMonthData = new TreeMap<>();
+        
+        for (int day = 1; day <= daysInCurrentMonth; day++) {
+            thisMonthData.put(day, 0.0);
+        }
+        for (int day = 1; day <= daysInLastMonth; day++) {
+            lastMonthData.put(day, 0.0);
         }
         
-        // Calculate actual data from transactions
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        DateTimeFormatter dateOnlyFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        
         for (Transaction tx : transactions) {
+            boolean isIncome = tx.getIncome() > 0;
+            if (isIncome != showingIncome) continue;
+            
             try {
                 String createTime = tx.getCreateTime();
-                if (createTime != null && !createTime.isEmpty()) {
-                    LocalDate txDate = LocalDate.parse(createTime.substring(0, 10));
-                    long daysAgo = java.time.temporal.ChronoUnit.DAYS.between(txDate, now);
-                    
-                    String weekLabel;
-                    if (daysAgo < 7) {
-                        weekLabel = "Week 4";
-                    } else if (daysAgo < 14) {
-                        weekLabel = "Week 3";
-                    } else if (daysAgo < 21) {
-                        weekLabel = "Week 2";
-                    } else if (daysAgo < 28) {
-                        weekLabel = "Week 1";
-                    } else {
-                        continue; // Skip older transactions
-                    }
-                    
-                    if (tx.getIncome() > 0) {
-                        weeklyIncome.merge(weekLabel, tx.getAmount(), Double::sum);
-                    } else {
-                        weeklyExpenses.merge(weekLabel, tx.getAmount(), Double::sum);
+                LocalDate txDate;
+                
+                try {
+                    txDate = LocalDate.parse(createTime, formatter);
+                } catch (Exception e) {
+                    try {
+                        txDate = LocalDate.parse(createTime, dateOnlyFormatter);
+                    } catch (Exception e2) {
+                        continue;
                     }
                 }
+                
+                int dayOfMonth = txDate.getDayOfMonth();
+                YearMonth txMonth = YearMonth.from(txDate);
+                
+                if (txMonth.equals(currentMonth)) {
+                    thisMonthData.merge(dayOfMonth, tx.getAmount(), Double::sum);
+                } else if (txMonth.equals(lastMonth)) {
+                    lastMonthData.merge(dayOfMonth, tx.getAmount(), Double::sum);
+                }
             } catch (Exception e) {
-                // Skip transactions with invalid dates
+                // Skip
             }
         }
-
-        XYChart.Series<String, Number> incomeSeries = new XYChart.Series<>();
-        incomeSeries.setName("Income");
-        for (Map.Entry<String, Double> entry : weeklyIncome.entrySet()) {
-            incomeSeries.getData().add(new XYChart.Data<>(entry.getKey(), entry.getValue()));
+        
+        XYChart.Series<Number, Number> thisMonthSeries = new XYChart.Series<>();
+        thisMonthSeries.setName("This Month");
+        for (Map.Entry<Integer, Double> entry : thisMonthData.entrySet()) {
+            thisMonthSeries.getData().add(new XYChart.Data<>(entry.getKey(), entry.getValue()));
         }
-
-        XYChart.Series<String, Number> expenseSeries = new XYChart.Series<>();
-        expenseSeries.setName("Expenses");
-        for (Map.Entry<String, Double> entry : weeklyExpenses.entrySet()) {
-            expenseSeries.getData().add(new XYChart.Data<>(entry.getKey(), entry.getValue()));
+        
+        XYChart.Series<Number, Number> lastMonthSeries = new XYChart.Series<>();
+        lastMonthSeries.setName("Last Month");
+        int maxDays = Math.min(daysInLastMonth, daysInCurrentMonth);
+        for (int day = 1; day <= maxDays; day++) {
+            lastMonthSeries.getData().add(new XYChart.Data<>(day, lastMonthData.get(day)));
         }
-
-        incomeExpenseChart.getData().addAll(incomeSeries, expenseSeries);
+        
+        dailyChart.getData().addAll(thisMonthSeries, lastMonthSeries);
     }
 
     private void loadExpensePieChart() {
+        expensePieChartContainer.getChildren().clear();
+        
+        HBox toggleBox = new HBox(8);
+        toggleBox.setAlignment(Pos.CENTER_LEFT);
+        
+        ToggleGroup displayToggle = new ToggleGroup();
+        
+        ToggleButton dollarBtn = new ToggleButton("$");
+        dollarBtn.setToggleGroup(displayToggle);
+        dollarBtn.setSelected(!showPercentage);
+        dollarBtn.setStyle(getToggleStyle(!showPercentage));
+        
+        ToggleButton percentBtn = new ToggleButton("%");
+        percentBtn.setToggleGroup(displayToggle);
+        percentBtn.setSelected(showPercentage);
+        percentBtn.setStyle(getToggleStyle(showPercentage));
+        
+        dollarBtn.setOnAction(e -> {
+            showPercentage = false;
+            dollarBtn.setStyle(getToggleStyle(true));
+            percentBtn.setStyle(getToggleStyle(false));
+            updatePieChart();
+        });
+        
+        percentBtn.setOnAction(e -> {
+            showPercentage = true;
+            percentBtn.setStyle(getToggleStyle(true));
+            dollarBtn.setStyle(getToggleStyle(false));
+            updatePieChart();
+        });
+        
+        toggleBox.getChildren().addAll(dollarBtn, percentBtn);
+        
+        expensePieChart = new PieChart();
+        expensePieChart.setPrefHeight(450);
+        expensePieChart.setPrefWidth(500);
+        expensePieChart.setMinHeight(400);
+        expensePieChart.setMinWidth(450);
+        expensePieChart.setLegendVisible(false);
+        expensePieChart.setLabelsVisible(true);
+        
+        VBox legendBox = new VBox(8);
+        legendBox.setPadding(new Insets(10, 0, 0, 0));
+        
+        updatePieChart();
+        
+        expensePieChartContainer.getChildren().addAll(toggleBox, expensePieChart, legendBox);
+        VBox.setMargin(toggleBox, new Insets(0, 0, 8, 0));
+    }
+    
+    private void updatePieChart() {
         expensePieChart.getData().clear();
-
-        // Get transactions and group by category
+        
+        // Income category IDs to exclude from spending breakdown
+        java.util.Set<String> incomeCategories = java.util.Set.of("10", "11");
+        
         List<Transaction> transactions = dataStore.getTransactions();
-        Map<String, Double> categoryTotals = transactions.stream()
+        // Use LinkedHashMap to preserve insertion order
+        Map<String, Double> categoryTotals = new LinkedHashMap<>();
+        transactions.stream()
                 .filter(tx -> tx.getIncome() <= 0)
-                .collect(Collectors.groupingBy(
-                        tx -> tx.getCategoryId() != null ? tx.getCategoryId() : "Other",
-                        Collectors.summingDouble(Transaction::getAmount)
-                ));
-
+                .filter(tx -> !incomeCategories.contains(tx.getCategoryId()))
+                .forEach(tx -> {
+                    String catId = tx.getCategoryId() != null ? tx.getCategoryId() : "Other";
+                    categoryTotals.merge(catId, tx.getAmount(), Double::sum);
+                });
+        
         if (categoryTotals.isEmpty()) {
-            // Sample data if no transactions
-            categoryTotals.put("1", 450.0);
-            categoryTotals.put("2", 200.0);
-            categoryTotals.put("5", 350.0);
-            categoryTotals.put("3", 500.0);
-            categoryTotals.put("10", 150.0);
+            return;
         }
-
+        
+        double total = categoryTotals.values().stream().mapToDouble(Double::doubleValue).sum();
+        
+        // Store category IDs in order for color assignment
+        List<String> categoryIds = new ArrayList<>(categoryTotals.keySet());
+        
         for (Map.Entry<String, Double> entry : categoryTotals.entrySet()) {
             String categoryId = entry.getKey();
-            String icon = CATEGORY_ICONS.getOrDefault(categoryId, "📦");
             String name = CATEGORY_NAMES.getOrDefault(categoryId, categoryId);
-            String displayName = icon + " " + name;
+            double amount = entry.getValue();
+            double percentage = total > 0 ? (amount / total) * 100 : 0;
             
-            PieChart.Data slice = new PieChart.Data(displayName, entry.getValue());
+            String label;
+            if (showPercentage) {
+                label = name + " (" + String.format("%.1f%%", percentage) + ")";
+            } else {
+                label = name + " ($" + String.format("%.0f", amount) + ")";
+            }
+            
+            PieChart.Data slice = new PieChart.Data(label, amount);
             expensePieChart.getData().add(slice);
         }
         
-        // Apply colors to pie slices
-        int index = 0;
-        for (Map.Entry<String, Double> entry : categoryTotals.entrySet()) {
-            String color = CATEGORY_COLORS.getOrDefault(entry.getKey(), "#64748b");
-            if (index < expensePieChart.getData().size()) {
-                PieChart.Data slice = expensePieChart.getData().get(index);
-                slice.getNode().setStyle("-fx-pie-color: " + color + ";");
+        // Apply colors after data is added - use categoryIds list to match order
+        javafx.application.Platform.runLater(() -> {
+            for (int i = 0; i < expensePieChart.getData().size() && i < categoryIds.size(); i++) {
+                String categoryId = categoryIds.get(i);
+                PieChart.Data slice = expensePieChart.getData().get(i);
+                String color = CATEGORY_COLORS.getOrDefault(categoryId, "#64748b");
+                
+                if (slice.getNode() != null) {
+                    slice.getNode().setStyle("-fx-pie-color: " + color + ";");
+                    
+                    String name = CATEGORY_NAMES.getOrDefault(categoryId, categoryId);
+                    double amount = categoryTotals.get(categoryId);
+                    double percentage = total > 0 ? (amount / total) * 100 : 0;
+                    Tooltip tooltip = new Tooltip(name + "\n$" + String.format("%.2f", amount) + " (" + String.format("%.1f%%", percentage) + ")");
+                    Tooltip.install(slice.getNode(), tooltip);
+                }
             }
-            index++;
-        }
+            
+            // Update custom legend
+            if (expensePieChartContainer.getChildren().size() > 2) {
+                VBox legendBox = (VBox) expensePieChartContainer.getChildren().get(2);
+                legendBox.getChildren().clear();
+                
+                FlowPane legendFlow = new FlowPane(12, 8);
+                legendFlow.setAlignment(Pos.CENTER);
+                
+                for (String catId : categoryIds) {
+                    String icon = CATEGORY_ICONS.getOrDefault(catId, "📦");
+                    String color = CATEGORY_COLORS.getOrDefault(catId, "#64748b");
+                    double amt = categoryTotals.get(catId);
+                    double pct = total > 0 ? (amt / total) * 100 : 0;
+                    
+                    HBox legendItem = new HBox(4);
+                    legendItem.setAlignment(Pos.CENTER_LEFT);
+                    
+                    Region colorBox = new Region();
+                    colorBox.setPrefSize(10, 10);
+                    colorBox.setStyle("-fx-background-color: " + color + "; -fx-background-radius: 2;");
+                    
+                    String displayText = showPercentage ? 
+                        icon + " " + String.format("%.0f%%", pct) :
+                        icon + " $" + String.format("%.0f", amt);
+                    
+                    Label itemLabel = new Label(displayText);
+                    itemLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #64748b;");
+                    
+                    legendItem.getChildren().addAll(colorBox, itemLabel);
+                    legendFlow.getChildren().add(legendItem);
+                }
+                legendBox.getChildren().add(legendFlow);
+            }
+        });
     }
 
     private void loadMonthlyTrendsChart() {
         monthlyTrendsChart.getData().clear();
 
         List<Transaction> transactions = dataStore.getTransactions();
-        
-        // Get the last 6 months
         LocalDate now = LocalDate.now();
+        int currentYear = now.getYear();
         Map<String, Double> monthlySpending = new LinkedHashMap<>();
-        List<String> monthLabels = new ArrayList<>();
+        List<String> monthLabels = Arrays.asList("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
         
-        // Initialize last 6 months with 0
-        DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("MMM");
-        for (int i = 5; i >= 0; i--) {
-            LocalDate monthDate = now.minusMonths(i);
-            String monthLabel = monthDate.format(monthFormatter);
-            monthlySpending.put(monthLabel, 0.0);
-            monthLabels.add(monthLabel);
+        for (String month : monthLabels) {
+            monthlySpending.put(month, 0.0);
         }
         
-        // Group expenses by month
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        DateTimeFormatter dateOnlyFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        
         for (Transaction tx : transactions) {
-            // Only count expenses (income <= 0 means expense)
-            if (tx.getIncome() > 0) {
-                continue;
-            }
+            if (tx.getIncome() > 0) continue;
             
             try {
                 String createTime = tx.getCreateTime();
-                if (createTime != null && !createTime.isEmpty()) {
-                    LocalDate txDate = LocalDate.parse(createTime.substring(0, 10));
-                    
-                    // Check if transaction is within the last 6 months
-                    LocalDate sixMonthsAgo = now.minusMonths(6).withDayOfMonth(1);
-                    if (!txDate.isBefore(sixMonthsAgo)) {
-                        String monthLabel = txDate.format(monthFormatter);
-                        // Only add if this month is in our map
-                        if (monthlySpending.containsKey(monthLabel)) {
-                            monthlySpending.merge(monthLabel, tx.getAmount(), Double::sum);
-                        }
+                LocalDate txDate;
+                
+                try {
+                    txDate = LocalDate.parse(createTime, formatter);
+                } catch (Exception e) {
+                    try {
+                        txDate = LocalDate.parse(createTime, dateOnlyFormatter);
+                    } catch (Exception e2) {
+                        continue;
                     }
                 }
+                
+                if (txDate.getYear() == currentYear) {
+                    int monthIndex = txDate.getMonthValue() - 1;
+                    String monthLabel = monthLabels.get(monthIndex);
+                    monthlySpending.merge(monthLabel, tx.getAmount(), Double::sum);
+                }
             } catch (Exception e) {
-                // Skip transactions with invalid dates
+                // Skip
             }
         }
 
-        // Configure Y axis (amount with markings)
         NumberAxis yAxis = (NumberAxis) monthlyTrendsChart.getYAxis();
         double maxValue = monthlySpending.values().stream().mapToDouble(Double::doubleValue).max().orElse(100);
-        double upperBound = Math.max(100, Math.ceil(maxValue * 1.2 / 1000) * 1000);
+        double upperBound = Math.max(100, Math.ceil(maxValue * 1.2 / 100) * 100);
         double tickUnit = Math.max(100, Math.ceil(upperBound / 5 / 100) * 100);
         
         yAxis.setAutoRanging(false);
         yAxis.setLowerBound(0);
         yAxis.setUpperBound(upperBound);
         yAxis.setTickUnit(tickUnit);
-        yAxis.setMinorTickVisible(true);
-        yAxis.setMinorTickCount(5);
-        yAxis.setTickLabelsVisible(true);
-        yAxis.setTickMarkVisible(true);
+        yAxis.setMinorTickVisible(false);
 
         XYChart.Series<String, Number> series = new XYChart.Series<>();
-        series.setName("Monthly Spending");
+        series.setName("Monthly Spending " + currentYear);
         
-        // Add data with month labels
         for (String month : monthLabels) {
             double amount = monthlySpending.get(month);
             series.getData().add(new XYChart.Data<>(month, amount));
@@ -303,32 +487,33 @@ public class ReportsController implements Initializable {
 
         monthlyTrendsChart.getData().add(series);
         
-        // Add labels on top of bars after rendering
         monthlyTrendsChart.applyCss();
         monthlyTrendsChart.layout();
         
         for (XYChart.Data<String, Number> data : series.getData()) {
-            double amount = data.getYValue().doubleValue();
-            String month = data.getXValue();
-            
             if (data.getNode() != null) {
-                data.getNode().setStyle("-fx-bar-fill: #3b82f6;");
+                double amount = data.getYValue().doubleValue();
+                String monthName = data.getXValue();
+                int dataMonthIndex = monthLabels.indexOf(monthName);
+                int currentMonthIndex = now.getMonthValue() - 1;
                 
-                // Create a VBox to hold both month label and amount
-                VBox labelBox = new VBox(2);
-                labelBox.setAlignment(Pos.CENTER);
+                if (dataMonthIndex == currentMonthIndex) {
+                    data.getNode().setStyle("-fx-bar-fill: #3b82f6;");
+                } else if (dataMonthIndex > currentMonthIndex) {
+                    data.getNode().setStyle("-fx-bar-fill: #e2e8f0;");
+                } else {
+                    data.getNode().setStyle("-fx-bar-fill: #94a3b8;");
+                }
                 
-                // Amount label on top
-                Label amountLabel = new Label("$" + String.format("%.0f", amount));
-                amountLabel.setStyle("-fx-font-size: 11px; -fx-font-weight: 600; -fx-text-fill: #1e293b;");
-                
-                labelBox.getChildren().add(amountLabel);
-                
-                // Position the labels above the bar
-                StackPane barNode = (StackPane) data.getNode();
-                barNode.getChildren().add(labelBox);
-                StackPane.setAlignment(labelBox, Pos.TOP_CENTER);
-                StackPane.setMargin(labelBox, new Insets(-20, 0, 0, 0));
+                if (amount > 0) {
+                    Label amountLabel = new Label("$" + String.format("%.0f", amount));
+                    amountLabel.setStyle("-fx-font-size: 9px; -fx-font-weight: 600; -fx-text-fill: #1e293b;");
+                    
+                    StackPane barNode = (StackPane) data.getNode();
+                    barNode.getChildren().add(amountLabel);
+                    StackPane.setAlignment(amountLabel, Pos.TOP_CENTER);
+                    StackPane.setMargin(amountLabel, new Insets(-16, 0, 0, 0));
+                }
             }
         }
     }
@@ -336,23 +521,31 @@ public class ReportsController implements Initializable {
     private void loadCategoryBreakdown() {
         categoryBreakdownList.getChildren().clear();
 
-        // Get transactions and group by category
+        // Income category IDs to exclude from spending breakdown
+        java.util.Set<String> incomeCategories = java.util.Set.of("10", "11");
+
         List<Transaction> transactions = dataStore.getTransactions();
-        Map<String, Double> categoryTotals = transactions.stream()
+        // Use LinkedHashMap to preserve insertion order
+        Map<String, Double> categoryTotals = new LinkedHashMap<>();
+        transactions.stream()
                 .filter(tx -> tx.getIncome() <= 0)
-                .collect(Collectors.groupingBy(
-                        tx -> tx.getCategoryId() != null ? tx.getCategoryId() : "Other",
-                        Collectors.summingDouble(Transaction::getAmount)
-                ));
+                .filter(tx -> !incomeCategories.contains(tx.getCategoryId()))
+                .forEach(tx -> {
+                    String catId = tx.getCategoryId() != null ? tx.getCategoryId() : "Other";
+                    categoryTotals.merge(catId, tx.getAmount(), Double::sum);
+                });
 
         if (categoryTotals.isEmpty()) {
-            // Sample data if no transactions
-            categoryTotals.put("1", 450.0);
-            categoryTotals.put("2", 200.0);
-            categoryTotals.put("5", 350.0);
-            categoryTotals.put("3", 500.0);
-            categoryTotals.put("10", 150.0);
+            Label emptyLabel = new Label("No expense data available");
+            emptyLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #64748b;");
+            categoryBreakdownList.getChildren().add(emptyLabel);
+            return;
         }
+
+        // Add hint label
+        Label hintLabel = new Label("Double-click a category to view transactions");
+        hintLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #94a3b8; -fx-font-style: italic;");
+        categoryBreakdownList.getChildren().add(hintLabel);
 
         double total = categoryTotals.values().stream().mapToDouble(Double::doubleValue).sum();
 
@@ -362,49 +555,45 @@ public class ReportsController implements Initializable {
             String icon = CATEGORY_ICONS.getOrDefault(categoryId, "📦");
             String color = CATEGORY_COLORS.getOrDefault(categoryId, "#64748b");
             
-            HBox categoryRow = createCategoryRow(
-                    categoryName,
-                    icon,
-                    entry.getValue(),
-                    total,
-                    color
-            );
+            HBox categoryRow = createCategoryRow(categoryId, categoryName, icon, entry.getValue(), total, color);
             categoryBreakdownList.getChildren().add(categoryRow);
         }
     }
 
-    private HBox createCategoryRow(String category, String icon, double amount, double total, String color) {
+    private HBox createCategoryRow(String categoryId, String category, String icon, double amount, double total, String color) {
         HBox row = new HBox(12);
         row.setAlignment(Pos.CENTER_LEFT);
-        row.setPadding(new Insets(12, 0, 12, 0));
-        row.setStyle("-fx-border-color: #f1f5f9; -fx-border-width: 0 0 1 0;");
+        row.setPadding(new Insets(12, 8, 12, 8));
+        row.setStyle("-fx-border-color: #f1f5f9; -fx-border-width: 0 0 1 0; -fx-cursor: hand; -fx-background-radius: 8;");
 
-        // Icon with colored background
+        row.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2) {
+                showCategoryTransactionsPopup(categoryId, category);
+            }
+        });
+        
+        row.setOnMouseEntered(e -> row.setStyle("-fx-border-color: #f1f5f9; -fx-border-width: 0 0 1 0; -fx-cursor: hand; -fx-background-color: #f8fafc; -fx-background-radius: 8;"));
+        row.setOnMouseExited(e -> row.setStyle("-fx-border-color: #f1f5f9; -fx-border-width: 0 0 1 0; -fx-cursor: hand; -fx-background-radius: 8;"));
+
         StackPane iconContainer = new StackPane();
         iconContainer.setPrefSize(36, 36);
         iconContainer.setMinSize(36, 36);
-        iconContainer.setStyle(
-            "-fx-background-color: " + color + "20; " +
-            "-fx-background-radius: 10;"
-        );
+        iconContainer.setStyle("-fx-background-color: " + color + "20; -fx-background-radius: 10;");
         
         Label iconLabel = new Label(icon);
         iconLabel.setStyle("-fx-font-size: 18px;");
         iconContainer.getChildren().add(iconLabel);
 
-        // Category name
         Label nameLabel = new Label(category);
         nameLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: 500; -fx-text-fill: #1e293b;");
         nameLabel.setPrefWidth(130);
 
-        // Progress bar
         double percentage = total > 0 ? amount / total : 0;
         ProgressBar progressBar = new ProgressBar(percentage);
         progressBar.setPrefHeight(8);
         progressBar.setStyle("-fx-accent: " + color + ";");
         HBox.setHgrow(progressBar, Priority.ALWAYS);
 
-        // Amount and percentage
         VBox amountBox = new VBox(2);
         amountBox.setAlignment(Pos.CENTER_RIGHT);
         amountBox.setPrefWidth(100);
@@ -420,6 +609,90 @@ public class ReportsController implements Initializable {
         row.getChildren().addAll(iconContainer, nameLabel, progressBar, amountBox);
         return row;
     }
+    
+    private void showCategoryTransactionsPopup(String categoryId, String categoryName) {
+        Stage popup = new Stage();
+        popup.initModality(Modality.APPLICATION_MODAL);
+        popup.setTitle(categoryName + " Transactions");
+        
+        VBox content = new VBox(16);
+        content.setPadding(new Insets(24));
+        content.setStyle("-fx-background-color: white;");
+        
+        Label header = new Label(CATEGORY_ICONS.getOrDefault(categoryId, "📦") + " " + categoryName);
+        header.setStyle("-fx-font-size: 20px; -fx-font-weight: 700; -fx-text-fill: #1e293b;");
+        
+        VBox transactionsList = new VBox(8);
+        
+        List<Transaction> categoryTransactions = dataStore.getTransactions().stream()
+                .filter(tx -> categoryId.equals(tx.getCategoryId()))
+                .sorted((a, b) -> b.getCreateTime().compareTo(a.getCreateTime()))
+                .collect(Collectors.toList());
+        
+        if (categoryTransactions.isEmpty()) {
+            Label emptyLabel = new Label("No transactions in this category");
+            emptyLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #64748b;");
+            transactionsList.getChildren().add(emptyLabel);
+        } else {
+            double totalAmount = 0;
+            for (Transaction tx : categoryTransactions) {
+                HBox txRow = new HBox(12);
+                txRow.setAlignment(Pos.CENTER_LEFT);
+                txRow.setPadding(new Insets(10));
+                txRow.setStyle("-fx-background-color: #f8fafc; -fx-background-radius: 8;");
+                
+                VBox details = new VBox(2);
+                HBox.setHgrow(details, Priority.ALWAYS);
+                
+                Label nameLabel = new Label(tx.getName());
+                nameLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: 500; -fx-text-fill: #1e293b;");
+                
+                Label dateLabel = new Label(tx.getCreateTime());
+                dateLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #94a3b8;");
+                
+                details.getChildren().addAll(nameLabel, dateLabel);
+                
+                Label amountLabel = new Label(String.format("$%.2f", tx.getAmount()));
+                String amountColor = tx.getIncome() > 0 ? "#22c55e" : "#ef4444";
+                amountLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: 600; -fx-text-fill: " + amountColor + ";");
+                
+                txRow.getChildren().addAll(details, amountLabel);
+                transactionsList.getChildren().add(txRow);
+                
+                totalAmount += tx.getAmount();
+            }
+            
+            HBox totalRow = new HBox();
+            totalRow.setAlignment(Pos.CENTER_RIGHT);
+            totalRow.setPadding(new Insets(12, 0, 0, 0));
+            totalRow.setStyle("-fx-border-color: #e2e8f0; -fx-border-width: 1 0 0 0;");
+            
+            Label totalLabel = new Label("Total: $" + String.format("%.2f", totalAmount));
+            totalLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: 700; -fx-text-fill: #1e293b;");
+            totalRow.getChildren().add(totalLabel);
+            
+            transactionsList.getChildren().add(totalRow);
+        }
+        
+        ScrollPane scrollPane = new ScrollPane(transactionsList);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPrefHeight(400);
+        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
+        
+        Button closeBtn = new Button("Close");
+        closeBtn.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 10 24; -fx-font-size: 14px;");
+        closeBtn.setOnAction(e -> popup.close());
+        
+        HBox buttonBox = new HBox();
+        buttonBox.setAlignment(Pos.CENTER_RIGHT);
+        buttonBox.getChildren().add(closeBtn);
+        
+        content.getChildren().addAll(header, scrollPane, buttonBox);
+        
+        Scene scene = new Scene(content, 500, 550);
+        popup.setScene(scene);
+        popup.showAndWait();
+    }
 
     private void exportReport() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -430,6 +703,6 @@ public class ReportsController implements Initializable {
     }
 
     public void refresh() {
-        loadReportData();
+        javafx.application.Platform.runLater(this::loadReportData);
     }
 }

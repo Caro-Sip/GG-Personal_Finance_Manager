@@ -104,30 +104,23 @@
             <!-- Charts Row -->
             <HBox spacing="16">
                 <!-- Income vs Expenses Chart -->
-                <VBox HBox.hgrow="ALWAYS" spacing="16"
+                <VBox fx:id="incomeExpenseChartContainer" HBox.hgrow="ALWAYS" spacing="8"
                       style="-fx-background-color: white; -fx-background-radius: 16; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 3, 0, 0, 1);">
                     <padding>
                         <Insets top="24" right="24" bottom="24" left="24"/>
                     </padding>
-                    <Label text="Income vs Expenses" style="-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: #1e293b;"/>
-                    <LineChart fx:id="incomeExpenseChart" prefHeight="300" legendVisible="true">
-                        <xAxis>
-                            <CategoryAxis fx:id="chartXAxis" label="Period"/>
-                        </xAxis>
-                        <yAxis>
-                            <NumberAxis fx:id="chartYAxis" label="Amount ($)"/>
-                        </yAxis>
-                    </LineChart>
+                    <Label text="Daily Spending/Income" style="-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: #1e293b;"/>
+                    <!-- Chart will be dynamically created -->
                 </VBox>
                 
                 <!-- Expense Breakdown Pie Chart -->
-                <VBox prefWidth="350" spacing="16"
+                <VBox fx:id="expensePieChartContainer" prefWidth="420" spacing="8"
                       style="-fx-background-color: white; -fx-background-radius: 16; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 3, 0, 0, 1);">
                     <padding>
                         <Insets top="24" right="24" bottom="24" left="24"/>
                     </padding>
                     <Label text="Expense Breakdown" style="-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: #1e293b;"/>
-                    <PieChart fx:id="expensePieChart" prefHeight="300" legendVisible="true"/>
+                    <!-- Pie chart will be dynamically created -->
                 </VBox>
             </HBox>
             
@@ -137,13 +130,10 @@
                 <padding>
                     <Insets top="24" right="24" bottom="24" left="24"/>
                 </padding>
-                <HBox alignment="CENTER_LEFT">
-                    <Label text="Spending by Category" style="-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: #1e293b;" HBox.hgrow="ALWAYS"/>
-                    <Hyperlink text="View Details" style="-fx-font-size: 14px; -fx-text-fill: #3b82f6;"/>
-                </HBox>
+                <Label text="Spending by Category" style="-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: #1e293b;"/>
                 
                 <!-- Category List Container -->
-                <VBox fx:id="categoryBreakdownList" spacing="12">
+                <VBox fx:id="categoryBreakdownList" spacing="8">
                     <!-- Category breakdown items will be dynamically added here -->
                 </VBox>
             </VBox>
@@ -155,12 +145,13 @@
                     <Insets top="24" right="24" bottom="24" left="24"/>
                 </padding>
                 <Label text="Monthly Spending Trends" style="-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: #1e293b;"/>
-                <BarChart fx:id="monthlyTrendsChart" prefHeight="350" legendVisible="false" barGap="4" categoryGap="20" animated="false">
+                <BarChart fx:id="monthlyTrendsChart" prefHeight="350" legendVisible="false" barGap="4" categoryGap="20" animated="false"
+                          horizontalGridLinesVisible="true" verticalGridLinesVisible="true">
                     <xAxis>
-                        <CategoryAxis fx:id="trendsXAxis" side="BOTTOM" tickMarkVisible="true" tickLabelsVisible="true" animated="false"/>
+                        <CategoryAxis fx:id="trendsXAxis" side="BOTTOM" tickMarkVisible="true" tickLabelsVisible="true" animated="false" label="Month"/>
                     </xAxis>
                     <yAxis>
-                        <NumberAxis fx:id="trendsYAxis" side="LEFT" label="Amount ($)" tickMarkVisible="true" tickLabelsVisible="true" minorTickVisible="true" animated="false"/>
+                        <NumberAxis fx:id="trendsYAxis" side="LEFT" label="Amount ($)" tickMarkVisible="true" tickLabelsVisible="true" minorTickVisible="false" animated="false"/>
                     </yAxis>
                 </BarChart>
             </VBox>
