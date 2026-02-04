@@ -165,8 +165,26 @@ public class TransactionController implements Initializable {
         typeCombo.setValue("Expense");
         
         ComboBox<Category> categoryCombo = new ComboBox<>();
-        List<Category> categories = categoryService.getAllCategories();
-        categoryCombo.getItems().addAll(categories);
+        List<Category> allCategories = categoryService.getAllCategories();
+        
+        // Helper method to filter categories by type
+        Runnable updateCategoryCombo = () -> {
+            String selectedType = typeCombo.getValue();
+            Category.Type categoryType = selectedType.equals("Income") ? Category.Type.INCOME : Category.Type.EXPENSE;
+            categoryCombo.getItems().clear();
+            for (Category cat : allCategories) {
+                if (cat.getType() == categoryType) {
+                    categoryCombo.getItems().add(cat);
+                }
+            }
+            if (!categoryCombo.getItems().isEmpty()) {
+                categoryCombo.setValue(categoryCombo.getItems().get(0));
+            }
+        };
+        
+        // Set up listener for type changes
+        typeCombo.setOnAction(e -> updateCategoryCombo.run());
+        
         categoryCombo.setConverter(new javafx.util.StringConverter<Category>() {
             @Override
             public String toString(Category category) {
@@ -177,9 +195,9 @@ public class TransactionController implements Initializable {
                 return null;
             }
         });
-        if (!categories.isEmpty()) {
-            categoryCombo.setValue(categories.get(0));
-        }
+        
+        // Initialize categories based on default type (Expense)
+        updateCategoryCombo.run();
         
         ComboBox<Wallet> accountCombo = new ComboBox<>();
         List<Wallet> wallets = dataStore.getWallets();
@@ -269,8 +287,30 @@ public class TransactionController implements Initializable {
         typeCombo.setValue(transaction.getIncome() == 1.0 ? "Income" : "Expense");
         
         ComboBox<Category> categoryCombo = new ComboBox<>();
-        List<Category> categories = categoryService.getAllCategories();
-        categoryCombo.getItems().addAll(categories);
+        List<Category> allCategories = categoryService.getAllCategories();
+        
+        // Helper method to filter categories by type
+        Runnable updateCategoryCombo = () -> {
+            String selectedType = typeCombo.getValue();
+            Category.Type categoryType = selectedType.equals("Income") ? Category.Type.INCOME : Category.Type.EXPENSE;
+            Category currentSelection = categoryCombo.getValue();
+            categoryCombo.getItems().clear();
+            for (Category cat : allCategories) {
+                if (cat.getType() == categoryType) {
+                    categoryCombo.getItems().add(cat);
+                }
+            }
+            // Try to keep current selection if still valid
+            if (currentSelection != null && categoryCombo.getItems().contains(currentSelection)) {
+                categoryCombo.setValue(currentSelection);
+            } else if (!categoryCombo.getItems().isEmpty()) {
+                categoryCombo.setValue(categoryCombo.getItems().get(0));
+            }
+        };
+        
+        // Set up listener for type changes
+        typeCombo.setOnAction(e -> updateCategoryCombo.run());
+        
         categoryCombo.setConverter(new javafx.util.StringConverter<Category>() {
             @Override
             public String toString(Category category) {
@@ -281,7 +321,12 @@ public class TransactionController implements Initializable {
                 return null;
             }
         });
-        for (Category cat : categories) {
+        
+        // Initialize categories based on transaction's type
+        updateCategoryCombo.run();
+        
+        // Set the current category
+        for (Category cat : categoryCombo.getItems()) {
             if (cat.getId().equals(transaction.getCategoryId())) {
                 categoryCombo.setValue(cat);
                 break;
