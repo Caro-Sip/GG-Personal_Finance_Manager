@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      xmlns="http://javafx.com/javafx/21"
+      fx:controller="gitgud.pfm.Controllers.SidebarController"
+      fx:id="sidebarRoot"
+      prefWidth="240"
+      style="-fx-background-color: #1e293b;">
+    <padding>
+        <Insets top="20" right="0" bottom="20" left="0"/>
+    </padding>
+    
+    <!-- Logo Section -->
+    <HBox fx:id="logoSection" spacing="12" alignment="CENTER_LEFT" 
+          style="-fx-border-color: rgba(255,255,255,0.1); -fx-border-width: 0 0 1 0;">
+        <padding>
+            <Insets top="0" right="24" bottom="24" left="24"/>
+        </padding>
+        <Region prefWidth="24" prefHeight="24" style="-fx-background-color: #3b82f6; -fx-background-radius: 6;"/>
+        <Label text="FinanceApp" style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;"/>
+    </HBox>
+    
+    <!-- Navigation Menu -->
+    <VBox fx:id="navMenu" spacing="6" VBox.vgrow="ALWAYS">
+        <padding>
+            <Insets top="20" right="12" bottom="20" left="12"/>
+        </padding>
+        
+        <!-- Dashboard Nav Item -->
+        <HBox fx:id="dashboardNavItem" spacing="14" alignment="CENTER_LEFT" styleClass="nav-item"
+              style="-fx-background-color: #3b82f6; -fx-background-radius: 10; -fx-cursor: hand;">
+            <padding>
+                <Insets top="14" right="16" bottom="14" left="16"/>
+            </padding>
+            <Label text="📊" style="-fx-font-size: 18px; -fx-text-fill: #3b82f6;"/>
+            <Label text="Dashboard" style="-fx-text-fill: white; -fx-font-size: 15px; -fx-font-weight: 500;"/>
+        </HBox>
+        
+        <!-- Transactions Nav Item -->
+        <HBox fx:id="transactionsNavItem" spacing="14" alignment="CENTER_LEFT" styleClass="nav-item"
+              style="-fx-background-radius: 10; -fx-cursor: hand;">
+            <padding>
+                <Insets top="14" right="16" bottom="14" left="16"/>
+            </padding>
+            <Label text="⇄" style="-fx-font-size: 18px; -fx-text-fill: #a855f7;"/>
+            <Label text="Transactions" style="-fx-text-fill: #94a3b8; -fx-font-size: 15px;"/>
+        </HBox>
+        
+        <!-- Reports Nav Item -->
+        <HBox fx:id="reportsNavItem" spacing="14" alignment="CENTER_LEFT" styleClass="nav-item"
+              style="-fx-background-radius: 10; -fx-cursor: hand;">
+            <padding>
+                <Insets top="14" right="16" bottom="14" left="16"/>
+            </padding>
+            <Label text="📈" style="-fx-font-size: 18px; -fx-text-fill: #10b981;"/>
+            <Label text="Reports" style="-fx-text-fill: #94a3b8; -fx-font-size: 15px;"/>
+        </HBox>
+        
+        <!-- Goals Nav Item -->
+        <HBox fx:id="goalsNavItem" spacing="14" alignment="CENTER_LEFT" styleClass="nav-item"
+              style="-fx-background-radius: 10; -fx-cursor: hand;">
+            <padding>
+                <Insets top="14" right="16" bottom="14" left="16"/>
+            </padding>
+            <Label text="🚩" style="-fx-font-size: 18px; -fx-text-fill: #ef4444;"/>
+            <Label text="Goals" style="-fx-text-fill: #94a3b8; -fx-font-size: 15px;"/>
+        </HBox>
+        
+        <!-- Accounts Nav Item -->
+        <HBox fx:id="accountsNavItem" spacing="14" alignment="CENTER_LEFT" styleClass="nav-item"
+              style="-fx-background-radius: 10; -fx-cursor: hand;">
+            <padding>
+                <Insets top="14" right="16" bottom="14" left="16"/>
+            </padding>
+            <Label text="👛" style="-fx-font-size: 18px; -fx-text-fill: #f59e0b;"/>
+            <Label text="Accounts" style="-fx-text-fill: #94a3b8; -fx-font-size: 15px;"/>
+        </HBox>
+    </VBox>
+    
+    <!-- Profile Section -->
+    <HBox fx:id="profileSection" spacing="12" alignment="CENTER_LEFT" 
+          style="-fx-background-color: rgba(255,255,255,0.05); -fx-background-radius: 12;">
+        <VBox.margin>
+            <Insets top="0" right="12" bottom="0" left="12"/>
+        </VBox.margin>
+        <padding>
+            <Insets top="16" right="20" bottom="16" left="20"/>
+        </padding>
+        
+        <!-- Avatar -->
+        <Region fx:id="avatarRegion" prefWidth="40" prefHeight="40" 
+                style="-fx-background-color: #3b82f6; -fx-background-radius: 20;"/>
+        
+        <!-- Profile Info -->
+        <VBox spacing="2" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
+            <Label fx:id="profileNameLabel" text="John Doe" 
+                   style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: 600;"/>
+            <Label fx:id="profileEmailLabel" text="john@email.com" 
+                   style="-fx-text-fill: #94a3b8; -fx-font-size: 12px;"/>
+        </VBox>
+        
+        <!-- Settings Icon -->
+        <Label fx:id="settingsIcon" text="⚙" 
+               style="-fx-text-fill: #94a3b8; -fx-opacity: 0.6; -fx-font-size: 14px; -fx-cursor: hand;"/>
+    </HBox>
+</VBox>

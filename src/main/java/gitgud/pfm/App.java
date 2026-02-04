@@ -1,34 +1,49 @@
 package gitgud.pfm;
 
 import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Screen;
 import javafx.geometry.Rectangle2D;
-import gitgud.pfm.GUI.Sidebar;
-import gitgud.pfm.GUI.DashboardView;
-import gitgud.pfm.GUI.TransactionsView;
-import gitgud.pfm.GUI.ReportsView;
-import gitgud.pfm.GUI.GoalsView;
-import gitgud.pfm.GUI.AccountsView;
+import gitgud.pfm.Controllers.SidebarController;
+
+import java.io.IOException;
 
 /**
  * JavaFX App - Personal Finance Manager
- * Modern GUI with sidebar navigation
+ * Modern GUI with sidebar navigation (FXML-based)
  */
 public class App extends Application {
 
     private BorderPane root;
-    private Sidebar sidebar;
+    private SidebarController sidebarController;
 
     @Override
     public void start(Stage primaryStage) {
         root = new BorderPane();
         
-        // Create sidebar
-        sidebar = new Sidebar(this);
-        root.setLeft(sidebar);
+        // Load sidebar from FXML
+        try {
+            FXMLLoader sidebarLoader = new FXMLLoader(getClass().getResource("/gitgud/pfm/sidebar.fxml"));
+            VBox sidebar = sidebarLoader.load();
+            sidebarController = sidebarLoader.getController();
+            
+            // Set navigation actions
+            sidebarController.setOnDashboardClick(this::showDashboard);
+            sidebarController.setOnTransactionsClick(this::showTransactions);
+            sidebarController.setOnReportsClick(this::showReports);
+            sidebarController.setOnGoalsClick(this::showGoals);
+            sidebarController.setOnAccountsClick(this::showAccounts);
+            
+            root.setLeft(sidebar);
+        } catch (IOException e) {
+            System.err.println("Failed to load sidebar FXML: " + e.getMessage());
+            e.printStackTrace();
+        }
         
         // Show dashboard by default
         showDashboard();
@@ -61,29 +76,65 @@ public class App extends Application {
         primaryStage.show();
     }
     
+    private Node loadFXML(String fxmlFile) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/gitgud/pfm/" + fxmlFile));
+            return loader.load();
+        } catch (IOException e) {
+            System.err.println("Failed to load FXML: " + fxmlFile + " - " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+    
     public void showDashboard() {
-        root.setCenter(new DashboardView());
-        sidebar.setActiveItem("Dashboard");
+        Node view = loadFXML("dashboard.fxml");
+        if (view != null) {
+            root.setCenter(view);
+        }
+        if (sidebarController != null) {
+            sidebarController.setActiveItem("Dashboard");
+        }
     }
     
     public void showTransactions() {
-        root.setCenter(new TransactionsView());
-        sidebar.setActiveItem("Transactions");
+        Node view = loadFXML("transactions.fxml");
+        if (view != null) {
+            root.setCenter(view);
+        }
+        if (sidebarController != null) {
+            sidebarController.setActiveItem("Transactions");
+        }
     }
     
     public void showReports() {
-        root.setCenter(new ReportsView());
-        sidebar.setActiveItem("Reports");
+        Node view = loadFXML("reports.fxml");
+        if (view != null) {
+            root.setCenter(view);
+        }
+        if (sidebarController != null) {
+            sidebarController.setActiveItem("Reports");
+        }
     }
     
     public void showGoals() {
-        root.setCenter(new GoalsView());
-        sidebar.setActiveItem("Goals");
+        Node view = loadFXML("goals.fxml");
+        if (view != null) {
+            root.setCenter(view);
+        }
+        if (sidebarController != null) {
+            sidebarController.setActiveItem("Goals");
+        }
     }
     
     public void showAccounts() {
-        root.setCenter(new AccountsView());
-        sidebar.setActiveItem("Accounts");
+        Node view = loadFXML("accounts.fxml");
+        if (view != null) {
+            root.setCenter(view);
+        }
+        if (sidebarController != null) {
+            sidebarController.setActiveItem("Accounts");
+        }
     }
 
     public static void main(String[] args) {

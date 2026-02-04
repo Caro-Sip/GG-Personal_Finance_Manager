@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.collections.FXCollections?>
+<?import java.lang.String?>
+
+<ScrollPane xmlns:fx="http://javafx.com/fxml/1"
+            xmlns="http://javafx.com/javafx/21"
+            fx:controller="gitgud.pfm.Controllers.GoalsController"
+            fx:id="rootPane"
+            fitToWidth="true"
+            style="-fx-background-color: #f0f2f5; -fx-background: #f0f2f5;">
+    
+    <VBox fx:id="mainContent" spacing="24" style="-fx-background-color: #f0f2f5;">
+        <padding>
+            <Insets top="28" right="28" bottom="28" left="28"/>
+        </padding>
+        
+        <!-- Header -->
+        <HBox spacing="16" alignment="CENTER_LEFT">
+            <Label text="Financial Goals" style="-fx-font-size: 28px; -fx-font-weight: 700; -fx-text-fill: #1e293b;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="addGoalButton" text="Add Goal" 
+                    style="-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-padding: 10 20; -fx-font-size: 14px; -fx-font-weight: 600; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+        </HBox>
+        
+        <!-- Summary Cards -->
+        <HBox spacing="16">
+            <!-- Total Goals Card -->
+            <VBox spacing="8" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS"
+                  style="-fx-background-color: white; -fx-background-radius: 16; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 3, 0, 0, 1);">
+                <padding>
+                    <Insets top="20" right="20" bottom="20" left="20"/>
+                </padding>
+                <Label text="Total Goals" style="-fx-font-size: 14px; -fx-text-fill: #64748b;"/>
+                <Label fx:id="totalGoalsLabel" text="0" style="-fx-font-size: 28px; -fx-font-weight: 700; -fx-text-fill: #1e293b;"/>
+            </VBox>
+            
+            <!-- Active Goals Card -->
+            <VBox spacing="8" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS"
+                  style="-fx-background-color: white; -fx-background-radius: 16; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 3, 0, 0, 1);">
+                <padding>
+                    <Insets top="20" right="20" bottom="20" left="20"/>
+                </padding>
+                <Label text="Active Goals" style="-fx-font-size: 14px; -fx-text-fill: #64748b;"/>
+                <Label fx:id="activeGoalsLabel" text="0" style="-fx-font-size: 28px; -fx-font-weight: 700; -fx-text-fill: #3b82f6;"/>
+            </VBox>
+            
+            <!-- Completed Goals Card -->
+            <VBox spacing="8" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS"
+                  style="-fx-background-color: white; -fx-background-radius: 16; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 3, 0, 0, 1);">
+                <padding>
+                    <Insets top="20" right="20" bottom="20" left="20"/>
+                </padding>
+                <Label text="Completed" style="-fx-font-size: 14px; -fx-text-fill: #64748b;"/>
+                <Label fx:id="completedGoalsLabel" text="0" style="-fx-font-size: 28px; -fx-font-weight: 700; -fx-text-fill: #22c55e;"/>
+            </VBox>
+            
+            <!-- Total Saved Card -->
+            <VBox spacing="8" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS"
+                  style="-fx-background-color: white; -fx-background-radius: 16; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 3, 0, 0, 1);">
+                <padding>
+                    <Insets top="20" right="20" bottom="20" left="20"/>
+                </padding>
+                <Label text="Total Saved" style="-fx-font-size: 14px; -fx-text-fill: #64748b;"/>
+                <Label fx:id="totalSavedLabel" text="0.00" style="-fx-font-size: 28px; -fx-font-weight: 700; -fx-text-fill: #f59e0b;"/>
+            </VBox>
+        </HBox>
+        
+        <!-- Goals Card -->
+        <VBox fx:id="goalsCard" spacing="16" 
+              style="-fx-background-color: white; -fx-background-radius: 16; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 3, 0, 0, 1);">
+            <padding>
+                <Insets top="24" right="24" bottom="24" left="24"/>
+            </padding>
+            
+            <!-- Card Header -->
+            <HBox alignment="CENTER_LEFT">
+                <Label text="All Goals" style="-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: #1e293b;" HBox.hgrow="ALWAYS"/>
+                <ComboBox fx:id="sortGoalsCombo" promptText="Sort by" prefWidth="150">
+                    <items>
+                        <FXCollections fx:factory="observableArrayList">
+                            <String fx:value="Priority"/>
+                            <String fx:value="Deadline"/>
+                            <String fx:value="Progress"/>
+                            <String fx:value="Amount"/>
+                        </FXCollections>
+                    </items>
+                </ComboBox>
+            </HBox>
+            
+            <!-- Goals List Container -->
+            <VBox fx:id="goalsList" spacing="12">
+                <!-- Goal items will be dynamically added here -->
+            </VBox>
+        </VBox>
+    </VBox>
+</ScrollPane>

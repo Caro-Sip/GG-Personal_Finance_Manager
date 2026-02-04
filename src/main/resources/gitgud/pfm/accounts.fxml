@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane xmlns:fx="http://javafx.com/fxml/1"
+            xmlns="http://javafx.com/javafx/21"
+            fx:controller="gitgud.pfm.Controllers.AccountsController"
+            fx:id="rootPane"
+            fitToWidth="true"
+            style="-fx-background-color: #f0f2f5; -fx-background: #f0f2f5;">
+    
+    <VBox fx:id="mainContent" spacing="24" style="-fx-background-color: #f0f2f5;">
+        <padding>
+            <Insets top="28" right="28" bottom="28" left="28"/>
+        </padding>
+        
+        <!-- Header -->
+        <HBox spacing="16" alignment="CENTER_LEFT">
+            <Label text="Accounts" style="-fx-font-size: 28px; -fx-font-weight: 700; -fx-text-fill: #1e293b;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="addAccountButton" text="Add Account" 
+                    style="-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: 600; -fx-padding: 12 24; -fx-background-radius: 8; -fx-cursor: hand;"/>
+        </HBox>
+        
+        <!-- Summary Cards -->
+        <HBox fx:id="summarySection" spacing="16">
+            <!-- Total Assets Card -->
+            <VBox fx:id="assetsCard" spacing="12" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS"
+                  style="-fx-background-color: white; -fx-background-radius: 16; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 3, 0, 0, 1);">
+                <padding>
+                    <Insets top="24" right="24" bottom="24" left="24"/>
+                </padding>
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <Label text="Total Assets" style="-fx-font-size: 14px; -fx-text-fill: #64748b; -fx-font-weight: 600;"/>
+                </HBox>
+                <Label fx:id="totalAssetsLabel" text="0.00" style="-fx-font-size: 32px; -fx-font-weight: 700; -fx-text-fill: #22c55e;"/>
+            </VBox>
+            
+            <!-- Total Liabilities Card -->
+            <VBox fx:id="liabilitiesCard" spacing="12" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS"
+                  style="-fx-background-color: white; -fx-background-radius: 16; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 3, 0, 0, 1);">
+                <padding>
+                    <Insets top="24" right="24" bottom="24" left="24"/>
+                </padding>
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <Label text="Total Liabilities" style="-fx-font-size: 14px; -fx-text-fill: #64748b; -fx-font-weight: 600;"/>
+                </HBox>
+                <Label fx:id="totalLiabilitiesLabel" text="0.00" style="-fx-font-size: 32px; -fx-font-weight: 700; -fx-text-fill: #ef4444;"/>
+            </VBox>
+            
+            <!-- Net Worth Card -->
+            <VBox fx:id="netWorthCard" spacing="12" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS"
+                  style="-fx-background-color: white; -fx-background-radius: 16; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 3, 0, 0, 1);">
+                <padding>
+                    <Insets top="24" right="24" bottom="24" left="24"/>
+                </padding>
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <Label text="Net Worth" style="-fx-font-size: 14px; -fx-text-fill: #64748b; -fx-font-weight: 600;"/>
+                </HBox>
+                <Label fx:id="netWorthLabel" text="0.00" style="-fx-font-size: 32px; -fx-font-weight: 700; -fx-text-fill: #3b82f6;"/>
+            </VBox>
+        </HBox>
+        
+        <!-- Accounts Card -->
+        <VBox fx:id="accountsCard" spacing="16" 
+              style="-fx-background-color: white; -fx-background-radius: 16; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 3, 0, 0, 1);">
+            <padding>
+                <Insets top="24" right="24" bottom="24" left="24"/>
+            </padding>
+            
+            <Label text="All Accounts" style="-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: #1e293b;"/>
+            
+            <!-- Accounts List Container -->
+            <VBox fx:id="accountsList" spacing="12">
+                <!-- Account items will be dynamically added here -->
+            </VBox>
+        </VBox>
+    </VBox>
+</ScrollPane>

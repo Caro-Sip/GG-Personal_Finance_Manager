@@ -12,7 +12,8 @@ module gitgud.pfm {
     opens gitgud.pfm.Models to javafx.base;
     
     exports gitgud.pfm;
+    exports gitgud.pfm.Controllers;
+    exports gitgud.pfm.Models;
     exports gitgud.pfm.GUI;
     exports gitgud.pfm.GUI.data;
-    exports gitgud.pfm.Controllers;
 }
