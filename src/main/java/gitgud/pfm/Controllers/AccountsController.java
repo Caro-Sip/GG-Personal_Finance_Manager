@@ -218,13 +218,25 @@ public class AccountsController implements Initializable {
     private void updateSummary() {
         List<Wallet> wallets = dataStore.getWallets();
 
-        double totalBalance = wallets.stream().mapToDouble(Wallet::getBalance).sum();
-        double totalAssets = Math.max(0, totalBalance);
-        double totalLiabilities = Math.abs(Math.min(0, totalBalance));
+        // Calculate total assets (positive balances = money you have)
+        double totalAssets = wallets.stream()
+            .mapToDouble(Wallet::getBalance)
+            .filter(balance -> balance > 0)
+            .sum();
+
+        // Calculate total liabilities (negative balances = money you owe)
+        double totalLiabilities = wallets.stream()
+            .mapToDouble(Wallet::getBalance)
+            .filter(balance -> balance < 0)
+            .map(Math::abs)
+            .sum();
+
+        // Net worth = assets - liabilities
+        double netWorth = totalAssets - totalLiabilities;
 
         totalAssetsLabel.setText(String.format("$%.2f", totalAssets));
         totalLiabilitiesLabel.setText(String.format("$%.2f", totalLiabilities));
-        netWorthLabel.setText(String.format("$%.2f", totalBalance));
+        netWorthLabel.setText(String.format("$%.2f", netWorth));
     }
 
     private void loadAccounts() {
