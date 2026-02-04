@@ -51,7 +51,7 @@
                     <Label text="Amount" 
                            style="-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: #374151;"/>
                     <TextField fx:id="amountField" 
-                               promptText="Enter amount..."
+                               promptText="$Enter amount..."
                                style="-fx-background-color: #f8fafc; -fx-background-radius: 10; -fx-border-color: #e2e8f0; -fx-border-radius: 10; -fx-padding: 12 16; -fx-font-size: 14px;"/>
                 </VBox>
                 
