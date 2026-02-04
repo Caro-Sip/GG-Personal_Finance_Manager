@@ -284,37 +284,29 @@ public class CliController {
         if (goals.isEmpty()) {
             System.out.println("No goals found.");
         } else {
-            System.out.println("\nGoals (Balance computed from allocated transactions):");
-            System.out.println(
-                    "-----------------------------------------------------------------------------------------------------");
-            System.out.printf("%-15s %-20s %12s %12s %10s %10s %-12s\n",
-                    "ID", "Name", "Target", "Current", "Tx Count", "Priority", "Deadline");
-            System.out.println(
-                    "-----------------------------------------------------------------------------------------------------");
+                System.out.println("\nGoals (Balance computed from allocated transactions):");
+                System.out.println("----------------------------------------------------------------------------------------------------------------");
+                System.out.printf("%-30s %-20s %13s %13s %8s %8s %-12s %9s\n",
+                    "ID", "Name", "Target", "Current", "TxCnt", "Priority", "Deadline", "Progress");
+                System.out.println("----------------------------------------------------------------------------------------------------------------");
 
-            for (Goal goal : goals) {
-                // Count transactions allocated to this goal
-                int txCount = 0;
-                for (Transaction tx : accountData.getTransactions()) {
-                    if (tx.getGoalId() != null && tx.getGoalId().equals(goal.getId())) {
-                        txCount++;
-                    }
-                }
-                
-                double progress = goal.getTarget() > 0 ? (goal.getBalance() / goal.getTarget()) * 100 : 0;
-                System.out.printf("%-15s %-20s $%,10.2f $%,10.2f %10d %9.1f %-12s (%.1f%%)\n",
-                        goal.getId(),
-                        goal.getName(),
-                        goal.getTarget(),
-                        goal.getBalance(),
-                        txCount,
-                        goal.getPriority(),
-                        goal.getDeadline(),
-                        progress);
+                for (Goal goal : goals) {
+                int txCount = goal.getTxCount();
+                double progress = goal.getProgress();
+                String nameDisplay = goal.getName() != null && goal.getName().length() > 20
+                    ? goal.getName().substring(0, 17) + "..."
+                    : goal.getName();
+                System.out.printf("%-30s %-20s %,11.2f $%,11.2f $%,8d %8.1f %-12s %8.1f%%\n",
+                    goal.getId(),
+                    nameDisplay,
+                    goal.getTarget(),
+                    goal.getBalance(),
+                    txCount,
+                    goal.getPriority(),
+                    goal.getDeadline(),
+                    progress);
             }
-
-            System.out.println(
-                    "-----------------------------------------------------------------------------------------------------");
+            System.out.println("----------------------------------------------------------------------------------------------------------------");
             System.out.println("Total goals: " + goals.size());
             System.out.println("\n💡 Tip: Allocate transactions to goals when adding them (Option 3)\n");
         }
@@ -322,6 +314,10 @@ public class CliController {
 
     /**
      * Handle Add Transaction menu option
+     */
+/**
+     * Handle Add Transaction menu option
+     * Now includes "Goals" as a special category
      */
     private void handleAddTransaction() {
         System.out.println("=== Add Transaction ===");
@@ -349,15 +345,27 @@ public class CliController {
             }
         }
 
+        // Add "Goals" as a special category option
+        int goalsOptionNumber = categoryIndex;
+        System.out.println("Special Categories:");
+        System.out.printf("  %d. Goals (Allocate to Savings Goal)\n", goalsOptionNumber);
+
         // User selects category
         Category selectedCategory = null;
-        while (selectedCategory == null) {
+        boolean isGoalCategory = false;
+        while (selectedCategory == null && !isGoalCategory) {
             System.out.print("Select the category (number): ");
             String input = scanner.nextLine().trim();
             try {
                 int num = Integer.parseInt(input);
-                if (num >= 1 && num <= defaultCategories.size()) {
+                
+                // Check if user selected "Goals"
+                if (num == goalsOptionNumber) {
+                    isGoalCategory = true;
+                    System.out.println("You selected: Goals");
+                } else if (num >= 1 && num <= defaultCategories.size()) {
                     selectedCategory = defaultCategories.get(num - 1);
+                    System.out.println("You selected: " + selectedCategory.getName());
                 } else {
                     System.out.println("Invalid number. Try again.");
                 }
@@ -365,8 +373,15 @@ public class CliController {
                 System.out.println("Please enter a valid number.");
             }
         }
+
+        // If user selected Goals category, handle goal allocation
+        if (isGoalCategory) {
+            handleGoalAllocationTransaction();
+            return;
+        }
+
+        // Continue with normal transaction flow
         Category.Type chosenType = selectedCategory.getType();
-        System.out.println("You selected: " + selectedCategory.getName());
 
         // Enter transaction name (description)
         System.out.print("Enter transaction name: ");
@@ -492,6 +507,209 @@ public class CliController {
 
         // Refresh account data after creating transaction
         this.accountData = AccountDataLoader.loadAccountData();
+    }
+
+    /**
+     * Handle Goal Allocation Transaction (when user selects "Goals" category)
+     * This creates a transaction that transfers money from wallet to goal
+     */
+    private void handleGoalAllocationTransaction() {
+        System.out.println("\n=== Allocate to Goal ===");
+        
+        // Step 1: Show all goals
+        List<Goal> goals = accountData.getGoals();
+        if (goals.isEmpty()) {
+            System.out.println("No goals found. Please create a goal first (Option 11).");
+            return;
+        }
+        
+        System.out.println("\nAvailable Goals:");
+        System.out.println("----------------------------------------------------------------------------------------------------------------");
+        System.out.printf("%-3s %-30s %-20s %14s %14s %8s %-12s %9s\n",
+                "#", "ID", "Name", "Target ($)", "Current ($)", "TxCnt", "Deadline", "Progress");
+        System.out.println("----------------------------------------------------------------------------------------------------------------");
+        
+        for (int i = 0; i < goals.size(); i++) {
+            Goal g = goals.get(i);
+            int txCount = g.getTxCount();
+            double progress = g.getProgress();
+            String nameDisplay = g.getName() != null && g.getName().length() > 20
+                    ? g.getName().substring(0, 17) + "..."
+                    : g.getName();
+            System.out.printf("%-3d %-30s %-20s $%,12.2f $%,12.2f %8d %-12s %8.1f%%\n",
+                    i + 1,
+                    g.getId(),
+                    nameDisplay,
+                    g.getTarget(),
+                    g.getBalance(),
+                    txCount,
+                    g.getDeadline(),
+                    progress);
+        }
+        System.out.println("----------------------------------------------------------------------------------------------------------------");
+        
+        // Step 2: Select goal
+        Goal selectedGoal = null;
+        while (selectedGoal == null) {
+            System.out.print("\nSelect goal number (or 0 to cancel): ");
+            String input = scanner.nextLine().trim();
+            try {
+                int num = Integer.parseInt(input);
+                if (num == 0) {
+                    System.out.println("Cancelled.");
+                    return;
+                }
+                if (num >= 1 && num <= goals.size()) {
+                    selectedGoal = goals.get(num - 1);
+                } else {
+                    System.out.println("Invalid number. Try again.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a valid number.");
+            }
+        }
+        
+        System.out.println("\n✓ Selected Goal: " + selectedGoal.getName());
+        System.out.println("  Current Balance: $" + String.format("%,.2f", selectedGoal.getBalance()));
+        System.out.println("  Target: $" + String.format("%,.2f", selectedGoal.getTarget()));
+        double remaining = selectedGoal.getTarget() - selectedGoal.getBalance();
+        if (remaining > 0) {
+            System.out.println("  Remaining: $" + String.format("%,.2f", remaining));
+        } else {
+            System.out.println("  ✓ Goal already reached!");
+        }
+        
+        // Step 3: Select wallet
+        List<Wallet> wallets = walletService.readAll();
+        if (wallets.isEmpty()) {
+            System.out.println("\nNo wallets found. Cannot create transaction.");
+            return;
+        }
+        
+        System.out.println("\nPick a wallet to transfer from:");
+        for (int i = 0; i < wallets.size(); i++) {
+            System.out.printf("  %d. %s (Balance: $%,.2f)\n", 
+                    i + 1, 
+                    wallets.get(i).getName(),
+                    wallets.get(i).getBalance());
+        }
+        
+        Wallet selectedWallet = null;
+        while (selectedWallet == null) {
+            System.out.print("Enter the number of the wallet: ");
+            String input = scanner.nextLine().trim();
+            try {
+                int num = Integer.parseInt(input);
+                if (num >= 1 && num <= wallets.size()) {
+                    selectedWallet = wallets.get(num - 1);
+                } else {
+                    System.out.println("Invalid number. Try again.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a valid number.");
+            }
+        }
+        System.out.println("✓ Selected: " + selectedWallet.getName());
+        
+        // Step 4: Enter amount
+        double amount = 0.0;
+        boolean validAmount = false;
+        while (!validAmount) {
+            System.out.print("\nEnter amount to allocate: $");
+            String input = scanner.nextLine().trim();
+            try {
+                amount = Double.parseDouble(input);
+                
+                if (amount <= 0) {
+                    System.out.println("Amount must be positive.");
+                    continue;
+                }
+                
+                // Check if wallet has enough balance
+                if (selectedWallet.getBalance() < amount) {
+                    System.out.println("❌ Insufficient wallet balance. Available: $" + 
+                            String.format("%,.2f", selectedWallet.getBalance()));
+                    continue;
+                }
+                
+                validAmount = true;
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a valid number.");
+            }
+        }
+        
+        // Step 5: Create the transaction and update balances in SQL
+        String timestamp = java.time.LocalDateTime.now().toString();
+        String transactionName = "Goal: " + selectedGoal.getName();
+        
+        // Use first available category
+        var categories = categoryService.getDefaultCategories();
+        String categoryId = categories.isEmpty() ? "CAT_GOAL" : categories.get(0).getId();
+        
+        // Create transaction (expense - money leaving wallet)
+        Transaction transaction = new Transaction(
+                categoryId,
+                amount,
+                transactionName,
+                0,  // income = 0 (expense - money leaving wallet)
+                selectedWallet.getId(),
+                timestamp
+        );
+        
+        // Link to goal if your transaction table has goalId column
+        transaction.setGoalId(selectedGoal.getId());
+        
+        // Save transaction to database
+        transactionService.create(transaction);
+        
+        // Update wallet balance in database
+        selectedWallet.subtractFromBalance(amount);
+        walletService.update(selectedWallet);
+        
+        // Update goal balance in database (THIS IS THE KEY FIX!)
+        selectedGoal.addToBalance(amount);
+        goalService.update(selectedGoal);
+        
+        System.out.println("\n✓ Transaction created successfully!");
+        System.out.println("$" + String.format("%,.2f", amount) + " allocated from " + 
+                selectedWallet.getName() + " → " + selectedGoal.getName());
+        
+        // Refresh account data - AccountDataLoader will load updated values from SQL
+        this.accountData = AccountDataLoader.loadAccountData();
+        
+        // Find updated goal to show progress
+        Goal updatedGoal = null;
+        for (Goal g : accountData.getGoals()) {
+            if (g.getId().equals(selectedGoal.getId())) {
+                updatedGoal = g;
+                break;
+            }
+        }
+        
+        if (updatedGoal != null) {
+            double newBalance = updatedGoal.getBalance();
+            double newProgress = updatedGoal.getTarget() > 0 ? (newBalance / updatedGoal.getTarget()) * 100 : 0;
+            
+            System.out.println("\n=== Goal Updated ===");
+            System.out.println("Goal: " + updatedGoal.getName());
+            System.out.println("New Balance: $" + String.format("%,.2f", newBalance));
+            System.out.println("Target: $" + String.format("%,.2f", updatedGoal.getTarget()));
+            System.out.println("Progress: " + String.format("%.1f%%", newProgress));
+            
+            // Show progress bar
+            int barLength = 30;
+            int filled = (int) (newProgress / 100 * barLength);
+            if (filled > barLength) filled = barLength;
+            System.out.print("[");
+            for (int i = 0; i < barLength; i++) {
+                System.out.print(i < filled ? "█" : "░");
+            }
+            System.out.println("]");
+            
+            if (newProgress >= 100) {
+                System.out.println("\n🎉 Congratulations! Goal reached!");
+            }
+        }
     }
 
     /**
