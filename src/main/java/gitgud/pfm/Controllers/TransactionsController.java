@@ -3,12 +3,17 @@ package gitgud.pfm.Controllers;
 import gitgud.pfm.GUI.data.DataStore;
 import gitgud.pfm.Models.Transaction;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 
+import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.List;
@@ -269,76 +274,42 @@ public class TransactionsController implements Initializable {
 
     @FXML
     private void showAddTransactionDialog() {
-        Dialog<Transaction> dialog = new Dialog<>();
-        dialog.setTitle("Add New Transaction");
-        dialog.setHeaderText("Enter transaction details");
-
-        ButtonType addButtonType = new ButtonType("Add", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(addButtonType, ButtonType.CANCEL);
-
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(20));
-
-        TextField nameField = new TextField();
-        nameField.setPromptText("Transaction name");
-
-        TextField amountField = new TextField();
-        amountField.setPromptText("0.00");
-
-        ComboBox<String> typeBox = new ComboBox<>();
-        typeBox.getItems().addAll("Expense", "Income");
-        typeBox.setValue("Expense");
-
-        ComboBox<String> categoryBox = new ComboBox<>();
-        categoryBox.getItems().addAll("food", "transport", "shopping", "bills", "entertainment", "income", "other");
-        categoryBox.setValue("other");
-
-        TextField descField = new TextField();
-        descField.setPromptText("Description (optional)");
-
-        grid.add(new Label("Name:"), 0, 0);
-        grid.add(nameField, 1, 0);
-        grid.add(new Label("Amount:"), 0, 1);
-        grid.add(amountField, 1, 1);
-        grid.add(new Label("Type:"), 0, 2);
-        grid.add(typeBox, 1, 2);
-        grid.add(new Label("Category:"), 0, 3);
-        grid.add(categoryBox, 1, 3);
-        grid.add(new Label("Description:"), 0, 4);
-        grid.add(descField, 1, 4);
-
-        dialog.getDialogPane().setContent(grid);
-
-        dialog.setResultConverter(dialogButton -> {
-            if (dialogButton == addButtonType) {
-                try {
-                    double amount = Double.parseDouble(amountField.getText());
-                    double income = typeBox.getValue().equals("Income") ? amount : 0;
-                    Transaction tx = new Transaction(
-                        categoryBox.getValue(),
-                        amount,
-                        nameField.getText(),
-                        income,
-                        null, // walletId
-                        java.time.LocalDateTime.now().toString()
-                    );
-                    return tx;
-                } catch (NumberFormatException e) {
-                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setContentText("Invalid amount!");
-                    alert.show();
-                    return null;
-                }
-            }
-            return null;
-        });
-
-        dialog.showAndWait().ifPresent(tx -> {
-            dataStore.addTransaction(tx);
+        try {
+            // Create popup stage
+            Stage popupStage = new Stage();
+            popupStage.initModality(Modality.APPLICATION_MODAL);
+            popupStage.setTitle("Add Transaction");
+            
+            // Load the form FXML
+            FXMLLoader formLoader = new FXMLLoader(getClass().getResource("/gitgud/pfm/add-transaction-form.fxml"));
+            BorderPane formRoot = formLoader.load();
+            AddTransactionFormController formController = formLoader.getController();
+            formController.setDialogStage(popupStage);
+            formController.setFormRoot(formRoot);
+            
+            // Load the category selection FXML
+            FXMLLoader categoryLoader = new FXMLLoader(getClass().getResource("/gitgud/pfm/add-transaction-category.fxml"));
+            BorderPane categoryRoot = categoryLoader.load();
+            AddTransactionCategoryController categoryController = categoryLoader.getController();
+            categoryController.setDialogStage(popupStage);
+            categoryController.setFormController(formController);
+            formController.setCategoryController(categoryController);
+            
+            // Start with category selection
+            Scene scene = new Scene(categoryRoot, 700, 600);
+            popupStage.setScene(scene);
+            popupStage.showAndWait();
+            
+            // Refresh transactions after popup closes
             refresh();
-        });
+        } catch (IOException e) {
+            System.err.println("Error loading Add Transaction dialog: " + e.getMessage());
+            e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setContentText("Failed to open Add Transaction dialog");
+            alert.showAndWait();
+        }
     }
 
     public void refresh() {
