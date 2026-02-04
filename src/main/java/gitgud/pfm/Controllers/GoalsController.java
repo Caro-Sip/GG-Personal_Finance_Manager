@@ -819,6 +819,8 @@ public class GoalsController implements Initializable {
             "-fx-font-weight: 600;" +
             "-fx-cursor: hand;"
         );
+        addBtn.setMinWidth(100);
+        addBtn.setMaxWidth(150);
 
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == addButtonType) {

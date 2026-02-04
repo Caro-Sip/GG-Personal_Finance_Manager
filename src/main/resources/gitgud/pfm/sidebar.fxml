@@ -82,29 +82,28 @@
     </VBox>
     
     <!-- Profile Section -->
-    <HBox fx:id="profileSection" spacing="12" alignment="CENTER_LEFT" 
-          style="-fx-background-color: rgba(255,255,255,0.05); -fx-background-radius: 12;">
+    <VBox spacing="8" style="-fx-background-color: rgba(255,255,255,0.05); -fx-background-radius: 12;">
         <VBox.margin>
             <Insets top="0" right="12" bottom="0" left="12"/>
         </VBox.margin>
         <padding>
-            <Insets top="16" right="20" bottom="16" left="20"/>
+            <Insets top="16" right="16" bottom="16" left="16"/>
         </padding>
         
-        <!-- Avatar -->
-        <Region fx:id="avatarRegion" prefWidth="40" prefHeight="40" 
-                style="-fx-background-color: #3b82f6; -fx-background-radius: 20;"/>
+        <Label text="Select Wallet" 
+               style="-fx-text-fill: #94a3b8; -fx-font-size: 12px; -fx-font-weight: 600;"/>
         
-        <!-- Profile Info -->
-        <VBox spacing="2" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
-            <Label fx:id="profileNameLabel" text="John Doe" 
-                   style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: 600;"/>
-            <Label fx:id="profileEmailLabel" text="john@email.com" 
-                   style="-fx-text-fill: #94a3b8; -fx-font-size: 12px;"/>
-        </VBox>
+        <ComboBox fx:id="walletSelector"
+                  style="-fx-background-color: rgba(0,0,0,0.3); -fx-text-fill: white; -fx-font-size: 13px; -fx-padding: 8px; -fx-border-color: #3b82f6; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6;">
+            <tooltip>
+                <Tooltip text="Select which wallet to use for transactions"/>
+            </tooltip>
+        </ComboBox>
         
-        <!-- Settings Icon -->
-        <Label fx:id="settingsIcon" text="⚙" 
-               style="-fx-text-fill: #94a3b8; -fx-opacity: 0.6; -fx-font-size: 14px; -fx-cursor: hand;"/>
-    </HBox>
+        <HBox spacing="4" alignment="CENTER_LEFT">
+            <Label text="Balance:" style="-fx-text-fill: #94a3b8; -fx-font-size: 12px;"/>
+            <Label fx:id="walletBalanceLabel" text="0.00" 
+                   style="-fx-text-fill: #22c55e; -fx-font-size: 13px; -fx-font-weight: 600;"/>
+        </HBox>
+    </VBox>
 </VBox>

@@ -1,11 +1,15 @@
 package gitgud.pfm.Controllers;
 
+import gitgud.pfm.GUI.data.DataStore;
+import gitgud.pfm.Models.Wallet;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.layout.*;
 
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
 
 public class SidebarController implements Initializable {
@@ -18,11 +22,8 @@ public class SidebarController implements Initializable {
     @FXML private HBox reportsNavItem;
     @FXML private HBox goalsNavItem;
     @FXML private HBox accountsNavItem;
-    @FXML private HBox profileSection;
-    @FXML private Region avatarRegion;
-    @FXML private Label profileNameLabel;
-    @FXML private Label profileEmailLabel;
-    @FXML private Label settingsIcon;
+    @FXML private ComboBox<Wallet> walletSelector;
+    @FXML private Label walletBalanceLabel;
 
     private HBox activeItem;
     private Runnable onDashboardClick;
@@ -30,10 +31,12 @@ public class SidebarController implements Initializable {
     private Runnable onReportsClick;
     private Runnable onGoalsClick;
     private Runnable onAccountsClick;
+    private DataStore dataStore;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         activeItem = dashboardNavItem;
+        dataStore = DataStore.getInstance();
         
         // Setup click handlers
         setupNavItem(dashboardNavItem, "Dashboard");
@@ -42,12 +45,46 @@ public class SidebarController implements Initializable {
         setupNavItem(goalsNavItem, "Goals");
         setupNavItem(accountsNavItem, "Accounts");
         
-        // Setup settings icon hover
-        if (settingsIcon != null) {
-            settingsIcon.setOnMouseEntered(e -> 
-                settingsIcon.setStyle("-fx-text-fill: #94a3b8; -fx-opacity: 1; -fx-font-size: 14px; -fx-cursor: hand;"));
-            settingsIcon.setOnMouseExited(e -> 
-                settingsIcon.setStyle("-fx-text-fill: #94a3b8; -fx-opacity: 0.6; -fx-font-size: 14px;"));
+        setupWalletSelector();
+    }
+    
+    private void setupWalletSelector() {
+        if (walletSelector != null) {
+            refreshWallets();
+            walletSelector.setOnAction(e -> {
+                Wallet selected = walletSelector.getValue();
+                if (selected != null && walletBalanceLabel != null) {
+                    walletBalanceLabel.setText(String.format("$%.2f", selected.getBalance()));
+                }
+            });
+        }
+    }
+    
+    public void refreshWallets() {
+        if (walletSelector != null) {
+            walletSelector.getItems().clear();
+            List<Wallet> wallets = dataStore.getWallets();
+            walletSelector.getItems().addAll(wallets);
+            if (!wallets.isEmpty()) {
+                walletSelector.setValue(wallets.get(0));
+                if (walletBalanceLabel != null) {
+                    walletBalanceLabel.setText(String.format("$%.2f", wallets.get(0).getBalance()));
+                }
+            }
+        }
+    }
+    
+    public Wallet getSelectedWallet() {
+        return walletSelector != null ? walletSelector.getValue() : null;
+    }
+    
+    public void updateSelectedWalletBalance(double newBalance) {
+        Wallet selected = getSelectedWallet();
+        if (selected != null) {
+            selected.setBalance(newBalance);
+            if (walletBalanceLabel != null) {
+                walletBalanceLabel.setText(String.format("$%.2f", newBalance));
+            }
         }
     }
 
@@ -151,18 +188,5 @@ public class SidebarController implements Initializable {
 
     public void setOnAccountsClick(Runnable action) {
         this.onAccountsClick = action;
-    }
-
-    // Profile setters
-    public void setProfileName(String name) {
-        if (profileNameLabel != null) {
-            profileNameLabel.setText(name);
-        }
-    }
-
-    public void setProfileEmail(String email) {
-        if (profileEmailLabel != null) {
-            profileEmailLabel.setText(email);
-        }
     }
 }
