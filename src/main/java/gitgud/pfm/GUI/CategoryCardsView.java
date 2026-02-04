@@ -411,6 +411,14 @@ public class CategoryCardsView extends ScrollPane {
                 createTime
             );
             
+            // Update wallet balance
+            Wallet wallet = dataStore.getWalletById(walletId);
+            if (wallet != null) {
+                double newBalance = wallet.getBalance() + (type == Category.Type.INCOME ? amount : -amount);
+                wallet.setBalance(newBalance);
+                dataStore.updateWallet(wallet);
+            }
+            
             // Save transaction
             dataStore.addTransaction(transaction);
             
