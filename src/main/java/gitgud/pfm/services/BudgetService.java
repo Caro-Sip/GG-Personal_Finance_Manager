@@ -164,10 +164,6 @@ public class BudgetService implements CRUDInterface<Budget> {
             System.err.println("Error deleting budget: " + e.getMessage());
         }
     }
-    
-    /**
-     * Get budgets that are currently active (current date within startDate and endDate)
-     */
     public List<Budget> getActiveBudgets() {
         String sql = "SELECT id, name, limitAmount, balance, startDate, endDate, periodType, walletId " +
                      "FROM Budget WHERE date('now') BETWEEN startDate AND endDate " +
