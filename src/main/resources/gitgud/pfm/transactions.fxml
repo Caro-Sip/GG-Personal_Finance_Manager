@@ -42,12 +42,17 @@
                     <items>
                         <FXCollections fx:factory="observableArrayList">
                             <String fx:value="All Categories"/>
-                            <String fx:value="Food"/>
+                            <String fx:value="Food &amp; Drinks"/>
                             <String fx:value="Transport"/>
+                            <String fx:value="Home Bills"/>
+                            <String fx:value="Self-care"/>
                             <String fx:value="Shopping"/>
-                            <String fx:value="Bills"/>
-                            <String fx:value="Entertainment"/>
-                            <String fx:value="Income"/>
+                            <String fx:value="Health"/>
+                            <String fx:value="Subscription"/>
+                            <String fx:value="Entertainment &amp; Sport"/>
+                            <String fx:value="Traveling"/>
+                            <String fx:value="Salary"/>
+                            <String fx:value="Investment"/>
                         </FXCollections>
                     </items>
                 </ComboBox>
@@ -62,6 +67,8 @@
                 </ComboBox>
                 <DatePicker fx:id="fromDatePicker" promptText="From Date"/>
                 <DatePicker fx:id="toDatePicker" promptText="To Date"/>
+                <Button fx:id="clearFiltersButton" text="Clear Filters" 
+                        style="-fx-background-color: #f1f5f9; -fx-text-fill: #64748b; -fx-padding: 8 16; -fx-background-radius: 6; -fx-cursor: hand;"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <TextField fx:id="searchField" promptText="Search transactions..." prefWidth="200" 
                            style="-fx-background-radius: 8; -fx-padding: 10;"/>
@@ -72,14 +79,15 @@
             <!-- Transactions Table Header -->
             <HBox spacing="16" alignment="CENTER_LEFT" style="-fx-background-color: #f8fafc; -fx-background-radius: 8;">
                 <padding>
-                    <Insets top="12" right="16" bottom="12" left="16"/>
+                    <Insets top="12" right="18" bottom="12" left="18"/>
                 </padding>
-                <Label text="Transaction" prefWidth="250" style="-fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: #64748b;"/>
-                <Label text="Category" prefWidth="120" style="-fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: #64748b;"/>
-                <Label text="Date" prefWidth="120" style="-fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: #64748b;"/>
-                <Label text="Wallet" prefWidth="120" style="-fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: #64748b;"/>
+                <Label text="Transaction" prefWidth="180" style="-fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: #64748b;"/>
+                <Label text="Category" prefWidth="140" style="-fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: #64748b;"/>
+                <Label text="Date" prefWidth="140" style="-fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: #64748b;"/>
+                <Label text="Wallet" prefWidth="140" style="-fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: #64748b;"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Label text="Amount" prefWidth="100" alignment="CENTER_RIGHT" style="-fx-font-size: 12px; -fx-font-weight: 600; -fx-text-fill: #64748b;"/>
+                <Label text="" prefWidth="40"/>
             </HBox>
             
             <!-- Transactions List Container -->

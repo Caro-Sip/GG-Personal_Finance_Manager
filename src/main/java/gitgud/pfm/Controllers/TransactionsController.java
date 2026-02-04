@@ -1,7 +1,9 @@
 package gitgud.pfm.Controllers;
 
 import gitgud.pfm.GUI.data.DataStore;
+import gitgud.pfm.Models.Category;
 import gitgud.pfm.Models.Transaction;
+import gitgud.pfm.services.CategoryService;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -16,7 +18,9 @@ import javafx.stage.Stage;
 import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
@@ -29,23 +33,35 @@ public class TransactionsController implements Initializable {
     @FXML private DatePicker fromDatePicker;
     @FXML private DatePicker toDatePicker;
     @FXML private TextField searchField;
+    @FXML private Button clearFiltersButton;
     @FXML private VBox transactionsList;
     @FXML private Button prevPageButton;
     @FXML private Button nextPageButton;
     @FXML private Label pageInfoLabel;
 
     private DataStore dataStore;
+    private CategoryService categoryService;
+    private Map<String, String> categoryIdToNameMap;
     private int currentPage = 1;
-    private int itemsPerPage = 15;
+    private int itemsPerPage = 20;
     private List<Transaction> filteredTransactions;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         dataStore = DataStore.getInstance();
+        categoryService = new CategoryService();
+        
+        // Build category ID to name mapping
+        buildCategoryMap();
         
         addTransactionButton.setOnAction(e -> showAddTransactionDialog());
         prevPageButton.setOnAction(e -> previousPage());
         nextPageButton.setOnAction(e -> nextPage());
+        
+        // Clear filters button
+        if (clearFiltersButton != null) {
+            clearFiltersButton.setOnAction(e -> clearFilters());
+        }
         
         // Filter listeners
         categoryFilter.setOnAction(e -> applyFilters());
@@ -55,6 +71,29 @@ public class TransactionsController implements Initializable {
         searchField.textProperty().addListener((obs, oldVal, newVal) -> applyFilters());
         
         loadTransactions();
+    }
+    
+    private void clearFilters() {
+        categoryFilter.setValue("All Categories");
+        typeFilter.setValue("All Types");
+        fromDatePicker.setValue(null);
+        toDatePicker.setValue(null);
+        searchField.clear();
+        currentPage = 1;
+        loadTransactions();
+    }
+    
+    private void buildCategoryMap() {
+        categoryIdToNameMap = new HashMap<>();
+        List<Category> categories = categoryService.getDefaultCategories();
+        for (Category cat : categories) {
+            categoryIdToNameMap.put(cat.getId(), cat.getName());
+        }
+    }
+    
+    private String getCategoryNameById(String categoryId) {
+        if (categoryId == null) return "Other";
+        return categoryIdToNameMap.getOrDefault(categoryId, categoryId);
     }
 
     private void applyFilters() {
@@ -70,10 +109,12 @@ public class TransactionsController implements Initializable {
         // Apply filters
         filteredTransactions = allTransactions.stream()
                 .filter(tx -> {
-                    // Category filter
-                    String category = categoryFilter.getValue();
-                    if (category != null && !category.equals("All Categories")) {
-                        if (!category.equalsIgnoreCase(tx.getCategoryId())) {
+                    // Category filter - match by category name
+                    String categoryFilterValue = categoryFilter.getValue();
+                    if (categoryFilterValue != null && !categoryFilterValue.equals("All Categories")) {
+                        String txCategoryName = getCategoryNameById(tx.getCategoryId());
+                        // Match if category name contains filter value (case insensitive)
+                        if (!txCategoryName.toLowerCase().contains(categoryFilterValue.toLowerCase())) {
                             return false;
                         }
                     }
@@ -83,6 +124,26 @@ public class TransactionsController implements Initializable {
                     if (type != null && !type.equals("All Types")) {
                         if (type.equals("Income") && tx.getIncome() <= 0) return false;
                         if (type.equals("Expense") && tx.getIncome() > 0) return false;
+                    }
+                    
+                    // Date filter
+                    LocalDate fromDate = fromDatePicker.getValue();
+                    LocalDate toDate = toDatePicker.getValue();
+                    if (fromDate != null || toDate != null) {
+                        try {
+                            String createTime = tx.getCreateTime();
+                            LocalDate txDate;
+                            try {
+                                txDate = LocalDate.parse(createTime.substring(0, 10));
+                            } catch (Exception e) {
+                                return true; // Include if date can't be parsed
+                            }
+                            
+                            if (fromDate != null && txDate.isBefore(fromDate)) return false;
+                            if (toDate != null && txDate.isAfter(toDate)) return false;
+                        } catch (Exception e) {
+                            // Include transaction if date parsing fails
+                        }
                     }
                     
                     // Search filter
@@ -129,28 +190,25 @@ public class TransactionsController implements Initializable {
         item.setStyle("-fx-background-color: #f1f5f9; -fx-background-radius: 10;");
         VBox.setMargin(item, new Insets(0, 0, 8, 0));
 
-        // Transaction name and details
-        VBox nameBox = new VBox(2);
-        nameBox.setPrefWidth(250);
+        // Transaction name only (no category below since there's a dedicated category column)
         Label nameLabel = new Label(tx.getName());
+        nameLabel.setPrefWidth(180);
         nameLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: 500; -fx-text-fill: #1e293b;");
-        Label descLabel = new Label(tx.getCategoryId() != null ? tx.getCategoryId() : "");
-        descLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #94a3b8;");
-        nameBox.getChildren().addAll(nameLabel, descLabel);
 
         // Category
-        Label categoryLabel = new Label(tx.getCategoryId() != null ? tx.getCategoryId() : "Other");
-        categoryLabel.setPrefWidth(120);
+        String categoryName = getCategoryNameById(tx.getCategoryId());
+        Label categoryLabel = new Label(categoryName);
+        categoryLabel.setPrefWidth(140);
         categoryLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #64748b;");
 
         // Date
         Label dateLabel = new Label(tx.getCreateTime());
-        dateLabel.setPrefWidth(120);
+        dateLabel.setPrefWidth(140);
         dateLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #64748b;");
 
         // Wallet
         Label walletLabel = new Label(tx.getWalletId() != null ? tx.getWalletId() : "—");
-        walletLabel.setPrefWidth(120);
+        walletLabel.setPrefWidth(140);
         walletLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #64748b;");
 
         Region spacer = new Region();
@@ -174,7 +232,7 @@ public class TransactionsController implements Initializable {
                 "-fx-font-size: 16px; -fx-text-fill: #64748b; -fx-padding: 4 8;"));
         editBtn.setOnAction(e -> showEditTransactionDialog(tx));
 
-        item.getChildren().addAll(nameBox, categoryLabel, dateLabel, walletLabel, spacer, amountLabel, editBtn);
+        item.getChildren().addAll(nameLabel, categoryLabel, dateLabel, walletLabel, spacer, amountLabel, editBtn);
         return item;
     }
 
