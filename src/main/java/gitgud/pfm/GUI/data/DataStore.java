@@ -209,6 +209,8 @@ public class DataStore {
     
     // ============== Refresh Listeners ==============
     private final java.util.List<Runnable> walletRefreshListeners = new java.util.ArrayList<>();
+    private final java.util.List<Runnable> goalRefreshListeners = new java.util.ArrayList<>();
+    private final java.util.List<Runnable> budgetRefreshListeners = new java.util.ArrayList<>();
     
     public void addWalletRefreshListener(Runnable listener) {
         walletRefreshListeners.add(listener);
@@ -224,6 +226,42 @@ public class DataStore {
                 listener.run();
             } catch (Exception e) {
                 System.err.println("Error in wallet refresh listener: " + e.getMessage());
+            }
+        }
+    }
+    
+    public void addGoalRefreshListener(Runnable listener) {
+        goalRefreshListeners.add(listener);
+    }
+    
+    public void removeGoalRefreshListener(Runnable listener) {
+        goalRefreshListeners.remove(listener);
+    }
+    
+    public void notifyGoalRefresh() {
+        for (Runnable listener : goalRefreshListeners) {
+            try {
+                listener.run();
+            } catch (Exception e) {
+                System.err.println("Error in goal refresh listener: " + e.getMessage());
+            }
+        }
+    }
+    
+    public void addBudgetRefreshListener(Runnable listener) {
+        budgetRefreshListeners.add(listener);
+    }
+    
+    public void removeBudgetRefreshListener(Runnable listener) {
+        budgetRefreshListeners.remove(listener);
+    }
+    
+    public void notifyBudgetRefresh() {
+        for (Runnable listener : budgetRefreshListeners) {
+            try {
+                listener.run();
+            } catch (Exception e) {
+                System.err.println("Error in budget refresh listener: " + e.getMessage());
             }
         }
     }
