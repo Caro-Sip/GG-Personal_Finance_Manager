@@ -19,12 +19,12 @@ public class GoalService implements CRUDInterface<Goal> {
     
     /**
      * Create a new goal in the database
-     * Explicit fields: id, name, target, balance (current), deadline, priority, createAt
+     * Explicit fields: id, name, target, balance (current), deadline, priority, createAt, walletId
      */
     @Override
     public void create(Goal goal) {
-        String sql = "INSERT INTO Goal (id, name, target, balance, deadline, priority, createAt) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Goal (id, name, target, balance, deadline, priority, createAt, walletId) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, goal.getId());
@@ -34,6 +34,7 @@ public class GoalService implements CRUDInterface<Goal> {
             pstmt.setString(5, goal.getDeadline());
             pstmt.setDouble(6, goal.getPriority());
             pstmt.setString(7, goal.getCreateTime());
+            pstmt.setString(8, goal.getWalletId());
             
             pstmt.executeUpdate();
         } catch (SQLException e) {
@@ -43,11 +44,11 @@ public class GoalService implements CRUDInterface<Goal> {
     
     /**
      * Read a single goal by id
-     * Explicit fields: id, name, target, balance (current), deadline, priority, createAt
+     * Explicit fields: id, name, target, balance (current), deadline, priority, createAt, walletId
      */
     @Override
     public Goal read(String id) {
-        String sql = "SELECT id, name, target, balance, deadline, priority, createAt " +
+        String sql = "SELECT id, name, target, balance, deadline, priority, createAt, walletId " +
                      "FROM Goal WHERE id = ?";
         
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
@@ -63,6 +64,7 @@ public class GoalService implements CRUDInterface<Goal> {
                     goal.setDeadline(rs.getString("deadline"));
                     goal.setPriority(rs.getDouble("priority"));
                     goal.setCreateTime(rs.getString("createAt"));
+                    goal.setWalletId(rs.getString("walletId"));
                     return goal;
                 }
             }
@@ -73,11 +75,10 @@ public class GoalService implements CRUDInterface<Goal> {
     }
     
     /**
-     * Read all goals from the database
-     * Explicit fields: id, name, target, balance (current), deadline, priority, createAt
+     * Read all goals from the database, walletId
      */
     public List<Goal> readAll() {
-        String sql = "SELECT id, name, target, balance, deadline, priority, createAt " +
+        String sql = "SELECT id, name, target, balance, deadline, priority, createAt, walletId " +
                      "FROM Goal ORDER BY priority DESC, deadline";
         List<Goal> goals = new ArrayList<>();
         
@@ -93,6 +94,7 @@ public class GoalService implements CRUDInterface<Goal> {
                 goal.setDeadline(rs.getString("deadline"));
                 goal.setPriority(rs.getDouble("priority"));
                 goal.setCreateTime(rs.getString("createAt"));
+                goal.setWalletId(rs.getString("walletId"));
                 goals.add(goal);
             }
         } catch (SQLException e) {
@@ -102,13 +104,12 @@ public class GoalService implements CRUDInterface<Goal> {
     }
     
     /**
-     * Update an existing goal
-     * Explicit fields: name, target, balance, deadline, priority, createAt (WHERE id = ?)
+     * Update an existing goal, walletId (WHERE id = ?)
      */
     @Override
     public void update(Goal goal) {
         String sql = "UPDATE Goal SET name = ?, target = ?, balance = ?, deadline = ?, " +
-                     "priority = ?, createAt = ? WHERE id = ?";
+                     "priority = ?, createAt = ?, walletId = ? WHERE id = ?";
         
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, goal.getName());
@@ -117,6 +118,8 @@ public class GoalService implements CRUDInterface<Goal> {
             pstmt.setString(4, goal.getDeadline());
             pstmt.setDouble(5, goal.getPriority());
             pstmt.setString(6, goal.getCreateTime());
+            pstmt.setString(7, goal.getWalletId());
+            pstmt.setString(8, goal.getCreateTime());
             pstmt.setString(7, goal.getId());
             
             pstmt.executeUpdate();
@@ -145,7 +148,7 @@ public class GoalService implements CRUDInterface<Goal> {
      * Get goals that are still active (not yet reached target)
      */
     public List<Goal> getActiveGoals() {
-        String sql = "SELECT id, name, target, balance, deadline, priority, createAt " +
+        String sql = "SELECT id, name, target, balance, deadline, priority, createAt, walletId " +
                      "FROM Goal WHERE balance < target " +
                      "ORDER BY priority DESC, deadline";
         List<Goal> goals = new ArrayList<>();
@@ -162,6 +165,7 @@ public class GoalService implements CRUDInterface<Goal> {
                 goal.setDeadline(rs.getString("deadline"));
                 goal.setPriority(rs.getDouble("priority"));
                 goal.setCreateTime(rs.getString("createAt"));
+                goal.setWalletId(rs.getString("walletId"));
                 goals.add(goal);
             }
         } catch (SQLException e) {

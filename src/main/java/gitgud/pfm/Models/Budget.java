@@ -3,13 +3,20 @@ package gitgud.pfm.Models;
 import gitgud.pfm.utils.IdGenerator;
 
 public class Budget extends FinancialEntity {
+    public enum PeriodType {
+        WEEKLY, MONTHLY, YEARLY, CUSTOM
+    }
+    
     private double limitAmount;
     private String startDate;
     private String endDate;
+    private PeriodType periodType; // WEEKLY, MONTHLY, YEARLY, CUSTOM
+    private String walletId; // Optional: link budget to specific wallet/account
 
     // No-arg constructor required for reflection-based mapping (do not auto-persist)
     public Budget() {
         super(null, null, 0.0);
+        this.periodType = PeriodType.MONTHLY; // Default to monthly
     }
     
     public Budget(String name, double limitAmount, double balance, String startDate, String endDate) {
@@ -17,6 +24,18 @@ public class Budget extends FinancialEntity {
         this.limitAmount = limitAmount;
         this.startDate = startDate;
         this.endDate = endDate;
+        this.periodType = PeriodType.CUSTOM;
+        this.walletId = null; // Account-wide by default
+    }
+    
+    public Budget(String name, double limitAmount, double balance, String startDate, 
+                  String endDate, PeriodType periodType, String walletId) {
+        super(IdGenerator.generateBudgetId(), name, balance);
+        this.limitAmount = limitAmount;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.periodType = periodType != null ? periodType : PeriodType.CUSTOM;
+        this.walletId = walletId;
     }
     
     public double getLimitAmount() { return limitAmount; }
@@ -27,4 +46,17 @@ public class Budget extends FinancialEntity {
     
     public String getEndDate() { return endDate; }
     public void setEndDate(String endDate) { this.endDate = endDate; }
+    
+    public PeriodType getPeriodType() { return periodType; }
+    public void setPeriodType(PeriodType periodType) { this.periodType = periodType; }
+    
+    public String getWalletId() { return walletId; }
+    public void setWalletId(String walletId) { this.walletId = walletId; }
+    
+    /**
+     * Check if this budget is account-wide (not linked to specific wallet)
+     */
+    public boolean isAccountWide() {
+        return walletId == null || walletId.isEmpty();
+    }
 }

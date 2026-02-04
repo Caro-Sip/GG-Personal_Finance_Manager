@@ -91,7 +91,7 @@ public class CliController {
                     handleUpdateTransaction(accountData);
                     break;
                 case "5":
-                    System.out.println("Delete Transaction feature not yet implemented.");
+                    handleDeleteTransaction(accountData);
                     break;
                 case "6":
                     handleViewAllBudgets();
@@ -103,7 +103,7 @@ public class CliController {
                     handleUpdateBudget(accountData);
                     break;
                 case "9":
-                    System.out.println("Delete Budget feature not yet implemented.");
+                    handleDeleteBudget(accountData);
                     break;
                 case "10":
                     handleViewAllGoals();
@@ -115,18 +115,9 @@ public class CliController {
                     handleUpdateGoal(accountData);
                     break;
                 case "13":
-                    System.out.println("Delete Goal feature not yet implemented.");
-                    break;
-                case "14":
-                    handleDeleteTransaction(accountData);
-                    break;
-                case "15":
-                    handleDeleteBudget(accountData);
-                    break;
-                case "16":
                     handleDeleteGoal(accountData);
                     break;
-                case "17":
+                case "14":
                     handleViewReports(accountData);
                     break;
                 case "0":
@@ -936,19 +927,19 @@ public class CliController {
         System.out.println("2. View All Transactions");
         System.out.println("3. Add Transaction");
         System.out.println("4. Edit Transaction");
-        System.out.println("5. Delete Transaction (Not Implemented)");
+        System.out.println("5. Delete Transaction");
         System.out.println("========================================");
         System.out.println("6. View All Budgets");
         System.out.println("7. Add Budget");
         System.out.println("8. Edit Budget");
-        System.out.println("9. Delete Budget (Not Implemented)");
+        System.out.println("9. Delete Budget");
         System.out.println("========================================");
         System.out.println("10. View All Goals");
         System.out.println("11. Add Goal");
         System.out.println("12. Edit Goal");
-        System.out.println("13. Delete Goal (Not Implemented)");
+        System.out.println("13. Delete Goal");
         System.out.println("========================================");
-        System.out.println("17. View Reports");
+        System.out.println("14. View Reports");
         System.out.println("========================================");
         System.out.println("0. Exit");
     }

@@ -77,11 +77,18 @@ public class DatabaseInitializer {
                         "balance"  NUMERIC,
                         "startDate"  TEXT,
                         "endDate"  TEXT,
-                        PRIMARY KEY("id")
+                        "periodType"  TEXT DEFAULT 'MONTHLY',
+                        "walletId"  TEXT,
+                        PRIMARY KEY("id"),
+                        FOREIGN KEY("walletId") REFERENCES "Wallet"("id") ON DELETE SET NULL
                     )
                     """;
                 statement.execute(createBudgetSQL);
                 System.out.println("✓ Created table: Budget");
+            } else {
+                // Add new columns if table exists but columns are missing
+                addColumnIfNotExists(connection, "Budget", "periodType", "TEXT DEFAULT 'MONTHLY'");
+                addColumnIfNotExists(connection, "Budget", "walletId", "TEXT");
             }
 
             // Create Goal table (links to wallet for funding)
@@ -130,6 +137,7 @@ public class DatabaseInitializer {
                     CREATE TABLE "Budget_Category" (
                         "budgetID"  TEXT NOT NULL,
                         "categoryID"  TEXT NOT NULL,
+                        "categoryLimit"  NUMERIC,
                         PRIMARY KEY("budgetID", "categoryID"),
                         FOREIGN KEY("budgetID") REFERENCES "Budget"("id") ON DELETE CASCADE,
                         FOREIGN KEY("categoryID") REFERENCES "Category"("id") ON DELETE CASCADE
@@ -137,6 +145,9 @@ public class DatabaseInitializer {
                     """;
                 statement.execute(createBudgetCategorySQL);
                 System.out.println("✓ Created table: Budget_Category (junction)");
+            } else {
+                // Add categoryLimit column if it doesn't exist
+                addColumnIfNotExists(connection, "Budget_Category", "categoryLimit", "NUMERIC");
             }
 
             System.out.println("Database initialization complete with proper foreign key relationships.");
@@ -159,6 +170,42 @@ public class DatabaseInitializer {
         DatabaseMetaData metaData = connection.getMetaData();
         try (ResultSet tables = metaData.getTables(null, null, tableName, new String[]{"TABLE"})) {
             return tables.next();
+        }
+    }
+    
+    /**
+     * Check if a column exists in a table.
+     *
+     * @param connection The database connection
+     * @param tableName  The name of the table
+     * @param columnName The name of the column to check
+     * @return true if the column exists, false otherwise
+     * @throws SQLException If the check fails
+     */
+    private static boolean columnExists(Connection connection, String tableName, String columnName) throws SQLException {
+        DatabaseMetaData metaData = connection.getMetaData();
+        try (ResultSet columns = metaData.getColumns(null, null, tableName, columnName)) {
+            return columns.next();
+        }
+    }
+    
+    /**
+     * Add a column to a table if it doesn't exist.
+     *
+     * @param connection The database connection
+     * @param tableName  The name of the table
+     * @param columnName The name of the column to add
+     * @param columnDef  The column definition (e.g., "TEXT DEFAULT 'value'")
+     * @throws SQLException If the operation fails
+     */
+    private static void addColumnIfNotExists(Connection connection, String tableName, 
+                                            String columnName, String columnDef) throws SQLException {
+        if (!columnExists(connection, tableName, columnName)) {
+            String alterSQL = "ALTER TABLE \"" + tableName + "\" ADD COLUMN \"" + columnName + "\" " + columnDef;
+            try (Statement statement = connection.createStatement()) {
+                statement.execute(alterSQL);
+                System.out.println("✓ Added column " + columnName + " to table " + tableName);
+            }
         }
     }
 
