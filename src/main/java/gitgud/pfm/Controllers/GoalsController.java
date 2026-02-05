@@ -697,10 +697,36 @@ public class GoalsController implements Initializable {
     private String formatDate(String dateTime) {
         if (dateTime == null || dateTime.isEmpty()) return "N/A";
         try {
-            // Try to parse and format the date
-            String datePart = dateTime.split(" ")[0];
-            LocalDate date = LocalDate.parse(datePart);
-            return date.format(DateTimeFormatter.ofPattern("MMM dd, yyyy"));
+            // Normalize separators: convert 'T' to space
+            String normalized = dateTime.replace('T', ' ');
+
+            // Remove fractional seconds if present (part after a dot)
+            int dotIdx = normalized.indexOf('.');
+            if (dotIdx > 0) {
+                normalized = normalized.substring(0, dotIdx);
+            }
+
+            // At this point expect format 'yyyy-MM-dd HH:mm:ss' or 'yyyy-MM-dd'
+            // Try parsing full datetime first
+            try {
+                java.time.LocalDateTime dt = java.time.LocalDateTime.parse(normalized, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                return dt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            } catch (Exception ignored) {
+                // Fallback: try ISO parser (handles variants)
+                try {
+                    java.time.LocalDateTime dt = java.time.LocalDateTime.parse(dateTime, DateTimeFormatter.ISO_DATE_TIME);
+                    return dt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                } catch (Exception ignored2) {
+                    // If it's just a date (no time), parse as LocalDate
+                    try {
+                        LocalDate d = LocalDate.parse(normalized.split(" ")[0]);
+                        return d.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + " 00:00:00";
+                    } catch (Exception ex) {
+                        // Last resort: return the normalized string without fractions
+                        return normalized;
+                    }
+                }
+            }
         } catch (Exception e) {
             return dateTime;
         }
